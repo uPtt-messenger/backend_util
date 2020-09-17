@@ -23,3 +23,13 @@ def compare_version(a, b):
         return 0
     if a < b:
         return -1
+
+
+def generate_token():
+    import random
+    import string
+
+    letters = string.ascii_lowercase
+    rand_str = ''.join(random.choice(letters) for i in range(256))
+
+    return sha256(f'{rand_str}')
