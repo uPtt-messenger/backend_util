@@ -4,12 +4,16 @@ from single_log.log import Logger
 
 
 class EventConsole:
+
+    # client
     key_close = 'close'
     key_login_success = 'login_success'
     key_logout = 'logout'
     key_login = 'login'
     key_recv_waterball = 'recv_waterball'
     key_send_waterball = 'send_waterball'
+
+    # server
 
     def __init__(self, console_obj):
         self.console = console_obj
@@ -27,11 +31,15 @@ class EventConsole:
 
     def _execute_thread(self, event_chain_name, parameter):
 
-        self.logger.show(Logger.INFO, '線程執行 event_chain_name', event_chain_name)
-        self.logger.show(Logger.INFO, '線程執行 parameter', parameter)
+        self.logger.show(Logger.INFO, f'線程事件通知鏈 {event_chain_name}', '啟動')
+
+        self.logger.show(Logger.DEBUG, '線程執行 event_chain_name', event_chain_name)
+        self.logger.show(Logger.DEBUG, '線程執行 parameter', parameter)
 
         for e in self.event_chain[event_chain_name]:
             e(parameter)
+
+        self.logger.show(Logger.INFO, f'線程事件通知鏈 {event_chain_name}', '完成')
 
     def execute(self, event_chain_name, run_thread: bool = False, parameter: tuple = None):
 
@@ -41,8 +49,14 @@ class EventConsole:
 
         else:
 
-            for e in self.event_chain[event_chain_name]:
-                e(parameter)
+            if event_chain_name not in self.event_chain:
+                self.logger.show(Logger.INFO, f'事件通知鏈 {event_chain_name}', '無事件')
+            else:
+                self.logger.show(Logger.INFO, f'事件通知鏈 {event_chain_name}', '啟動')
+                for e in self.event_chain[event_chain_name]:
+                    e(parameter)
+
+            self.logger.show(Logger.INFO, f'事件通知鏈 {event_chain_name}', '完成')
 
 
 if __name__ == '__main__':
