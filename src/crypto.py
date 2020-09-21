@@ -3,28 +3,27 @@ from Crypto.PublicKey import ECC
 # https://pycryptodome.readthedocs.io/en/latest/src/public_key/ecc.html?highlight=EccPoint#Crypto.PublicKey.ECC.EccPoint
 
 curve_type = [
-    'prime256v1'
+    'NIST P-521'
 ]
 
 for curve in curve_type:
-    key_0 = ECC.generate(curve=curve)
-    key_1 = ECC.generate(curve=curve)
+    key_outside = ECC.generate(curve=curve)
+    key_inside = ECC.generate(curve=curve)
 
-    # print(key_0.export_key(format='PEM'))
-    # print(key_1.export_key(format='PEM'))
+    public_key_outside = key_outside.public_key().export_key(format='PEM')
+    print(public_key_outside)
 
-    point_0 = key_0.public_key().pointQ
-    point_1 = key_1.public_key().pointQ
+    key_out = ECC.import_key(public_key_outside)
 
-    session_key_10 = point_1 * key_0.d
-    # print(session_key_10.xy)
+    point_inside = key_inside.public_key().pointQ
+    point_outside = key_out.pointQ
+    #
+    session_key_0 = key_inside.d * point_outside
+    print(session_key_0.xy)
+    #
+    session_key_1 = key_outside.d * key_inside.public_key().pointQ
+    print(session_key_1.xy)
 
-    session_key_01 = point_0 * key_1.d
-    # print(session_key_01.xy)
+    assert (session_key_0 == session_key_1)
 
-    assert (session_key_10 == session_key_01)
-
-
-
-    print('= ' * 40)
-
+    # print('= ' * 40)
