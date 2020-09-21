@@ -17,10 +17,12 @@ for curve in curve_type:
 
     point_inside = key_inside.public_key().pointQ
     point_outside = key_out.pointQ
-    #
+
+    # 本人觀點
     session_key_0 = key_inside.d * point_outside
     print(session_key_0.xy)
-    #
+
+    # 對方觀點
     session_key_1 = key_outside.d * key_inside.public_key().pointQ
     print(session_key_1.xy)
 
