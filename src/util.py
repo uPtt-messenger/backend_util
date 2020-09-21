@@ -29,7 +29,7 @@ def generate_token():
     import random
     import string
 
-    letters = string.ascii_lowercase
+    letters = string.ascii_lowercase + string.ascii_uppercase
     rand_str = ''.join(random.choice(letters) for i in range(256))
 
     return sha256(f'{rand_str}')
