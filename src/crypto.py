@@ -1,8 +1,16 @@
+
+from single_log.log import Logger
+
 from Crypto.PublicKey import ECC
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA3_256
 
 # https://pycryptodome.readthedocs.io/en/latest/src/public_key/ecc.html?highlight=EccPoint#Crypto.PublicKey.ECC.EccPoint
+
+class Crypto:
+    def __init__(self, console_obj):
+        self.console = console_obj
+
 
 if __name__ == '__main__':
     curve_type = [
@@ -50,6 +58,6 @@ if __name__ == '__main__':
         ciphertext, tag = cipher.encrypt_and_digest(data.encode('utf-8'))
 
         cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-        plaintext = cipher.decrypt(ciphertext)
+        plaintext = cipher.decrypt(ciphertext).decode('utf-8')
 
-        print(str(plaintext.decode('utf-8')))
+        assert (plaintext == data)
