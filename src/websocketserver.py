@@ -5,15 +5,15 @@ import time
 import threading
 import json
 
-from single_log.log import Logger
-from backend_util.src.msg import Msg
+from SingleLog.log import Logger
+from .msg import Msg
 
 
 class WsServer:
 
     def __init__(self, console_obj):
 
-        self.logger = Logger('WS', console_obj.config.log_level, handler=console_obj.config.log_handler)
+        self.logger = Logger('WsServer', console_obj.config.log_level, handler=console_obj.config.log_handler)
 
         self.logger.show(
             Logger.INFO,
@@ -141,9 +141,8 @@ class WsServer:
         self.run_session = self.run
 
     def server_setup(self):
-        logger = Logger('WS', self.console.config.log_level, handler=self.console.config.log_handler)
 
-        logger.show(
+        self.logger.show(
             Logger.INFO,
             '啟動伺服器',
             f'ws://127.0.0.1:{self.console.config.port}')
@@ -169,14 +168,5 @@ class WsServer:
 
             asyncio.get_event_loop().run_forever()
 
-
-if __name__ == '__main__':
-    start()
-    # stop()
-
-    while True:
-        try:
-            time.sleep(1)
-        except Exception:
-            stop()
-            break
+    def connect(self):
+        pass

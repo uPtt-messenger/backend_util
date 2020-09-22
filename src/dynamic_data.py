@@ -4,8 +4,8 @@ import time
 import urllib.request
 
 from single_log.log import Logger
-from backend_util.src.config import Config
-from backend_util.src.event import EventConsole
+from .config import Config
+from .event import EventConsole
 
 
 class DynamicData:
@@ -72,7 +72,7 @@ class DynamicData:
         if self.console.run_mode == 'dev':
             update_url = 'https://raw.githubusercontent.com/PttCodingMan/uPtt/develop/data/open_data.json'
         elif self.console.run_mode == 'release':
-            update_url = 'https://raw.githubusercontent.com/PttCodingMan/uPtt/master/data/open_data.json'
+            update_url = 'https://raw.githubusercontent.com/PttCodingMan/uPtt/main/data/open_data.json'
         try:
             with urllib.request.urlopen(update_url) as url:
                 data_temp = json.loads(url.read().decode())
