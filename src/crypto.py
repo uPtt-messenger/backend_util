@@ -1,4 +1,4 @@
-from single_log.log import Logger
+from SingleLog.log import Logger
 
 from Crypto.PublicKey import ECC
 from Crypto.Cipher import AES

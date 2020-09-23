@@ -6,7 +6,9 @@ import threading
 import json
 
 from SingleLog.log import Logger
+
 from .msg import Msg
+from .console import Console
 
 
 class WsServer:
@@ -84,20 +86,21 @@ class WsServer:
                 except json.JSONDecodeError:
                     self.logger.show(
                         Logger.INFO,
-                        '丟棄錯誤訊息',
+                        'Json 解析失敗，丟棄訊息',
                         recv_msg_str)
                     self.run_session = False
                     break
 
-                if 'token=' in path:
-                    token = path[path.find('token=') + len('token='):]
-                    if '&' in token:
-                        token = token[:token.find('&')]
-                    self.logger.show(
-                        Logger.INFO,
-                        '收到權杖',
-                        token)
-                    recv_msg.add(Msg.key_token, token)
+                if self.console.role == Console.role_client:
+                    if 'token=' in path:
+                        token = path[path.find('token=') + len('token='):]
+                        if '&' in token:
+                            token = token[:token.find('&')]
+                        self.logger.show(
+                            Logger.INFO,
+                            '收到權杖',
+                            token)
+                        recv_msg.add(Msg.key_token, token)
 
                 # print(str(recv_msg))
                 self.console.command.analyze(recv_msg)
@@ -124,7 +127,7 @@ class WsServer:
                     break
             await asyncio.sleep(0.1)
 
-    async def handler(self, websocket, path):
+    async def handler(self, websocket, path=None):
         while self.run_session:
             consumer_task = asyncio.ensure_future(
                 self.consumer_handler(websocket, path))
@@ -168,5 +171,24 @@ class WsServer:
 
             asyncio.get_event_loop().run_forever()
 
-    def connect(self):
-        pass
+    async def connect_server(self):
+        self.uri = f"ws://{self.console.dynamic_data.online_server}:{self.console.config.port}"
+        self.websocket = websockets.connect(self.uri)
+
+    async def connect_thread(self):
+
+        await self.connect_server()
+
+        asyncio.get_event_loop().run_until_complete(self.handler(self.websocket))
+
+    def connect_setup(self):
+        # asyncio.get_event_loop().run_until_complete(start_server)
+
+        self.logger.show(
+            Logger.INFO,
+            '啟動連線',
+            f'{self.console.dynamic_data.online_server}')
+
+        t = threading.Thread(target=self.connect_thread)
+        t.daemon = True
+        t.start()
