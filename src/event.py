@@ -1,6 +1,6 @@
 import threading
 
-from single_log.log import Logger
+from SingleLog.log import Logger
 
 
 class EventConsole:

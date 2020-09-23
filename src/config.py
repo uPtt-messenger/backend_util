@@ -1,7 +1,7 @@
 import json
 import os
 
-from single_log.log import Logger
+from SingleLog.log import Logger
 from PyPtt import PTT
 
 log_handler = None

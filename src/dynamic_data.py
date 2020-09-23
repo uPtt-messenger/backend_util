@@ -3,7 +3,7 @@ import threading
 import time
 import urllib.request
 
-from single_log.log import Logger
+from SingleLog.log import Logger
 from .config import Config
 from .event import EventConsole
 
