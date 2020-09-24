@@ -1,9 +1,7 @@
-
 import json
 
 
 class Msg:
-
     # 此處的 Key 是跟前端介接的，變數則命名成我習慣的樣子
 
     key_opt: str = 'operation'
@@ -33,6 +31,10 @@ class Msg:
     key_cipher_nonce = 'cipher_nonce'
     key_cipher_msg = 'cipher_msg'
     key_api_version = 'api_version'
+
+    # server
+
+    key_heartbeat = 'heartbeat'
 
     def __init__(self, operate=None, code=None, msg=None, strobj=None, dictobj=None):
 
