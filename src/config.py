@@ -60,8 +60,8 @@ class Config:
     ptt_log_level = PTT.log.level.INFO
     ptt_log_handler = None
 
-    feedback_port = 57983
-    feedback_frequency = 60
+    server_port = 57983
+    server_frequency = 60
 
     def __init__(self):
 

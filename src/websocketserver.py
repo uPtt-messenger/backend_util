@@ -70,7 +70,8 @@ class WsServer:
                     recv_msg_str = await ws.recv()
                 except Exception as e:
                     print('Connection Close: recv fail')
-                    raise ValueError('Connection Close: recv fail')
+                    recv_msg_str = None
+                    # raise ValueError('Connection Close: recv fail')
 
                 self.logger.show(
                     Logger.INFO,
@@ -92,7 +93,7 @@ class WsServer:
                     break
 
                 if self.console.role == Console.role_client:
-                    if 'token=' in path:
+                    if path is not None and 'token=' in path:
                         token = path[path.find('token=') + len('token='):]
                         if '&' in token:
                             token = token[:token.find('&')]
@@ -145,10 +146,15 @@ class WsServer:
 
     def server_setup(self):
 
+        if self.console.role == Console.role_client:
+            current_port = self.console.config.port
+        else:
+            current_port = self.console.config.server_port
+
         self.logger.show(
             Logger.INFO,
             '啟動伺服器',
-            f'ws://127.0.0.1:{self.console.config.port}')
+            f'ws://127.0.0.1:{current_port}')
 
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
@@ -156,7 +162,7 @@ class WsServer:
         start_server = websockets.serve(
             self.handler,
             "localhost",
-            self.console.config.port)
+            current_port)
 
         try:
             asyncio.get_event_loop().run_until_complete(start_server)
@@ -171,18 +177,35 @@ class WsServer:
 
             asyncio.get_event_loop().run_forever()
 
-    async def connect_server(self):
-        self.uri = f"ws://{self.console.dynamic_data.online_server}:{self.console.config.port}"
-        self.websocket = websockets.connect(self.uri)
+    def connect_server(self):
 
-    async def connect_thread(self):
+        if self.console.run_mode == Console.run_mode_dev:
+            self.uri = f'ws://127.0.0.1:{self.console.config.server_port}'
+        else:
+            self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
 
-        await self.connect_server()
+        self.logger.show(
+            Logger.INFO,
+            'uri',
+            self.uri)
 
-        asyncio.get_event_loop().run_until_complete(self.handler(self.websocket))
+        return websockets.connect(self.uri)
+
+    def connect_thread(self):
+
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+
+        self.logger.show(
+            Logger.INFO,
+            'uri',
+            '=============================')
+
+        self._websocket = self.connect_server()
+
+        asyncio.get_event_loop().run_until_complete(self.handler(self._websocket))
 
     def connect_setup(self):
-        # asyncio.get_event_loop().run_until_complete(start_server)
 
         self.logger.show(
             Logger.INFO,
