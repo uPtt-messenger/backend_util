@@ -25,7 +25,5 @@ class Console:
         self.dialogue = None
 
         ##################################
-
         # server
-
-
+        self.token_list = dict()

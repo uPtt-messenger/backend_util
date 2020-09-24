@@ -126,7 +126,10 @@ class WsServer:
                 except websockets.exceptions.ConnectionClosedOK:
                     print(f'push fail')
                     break
-            await asyncio.sleep(0.1)
+            if self.console.role == Console.role_client:
+                await asyncio.sleep(0.1)
+            else:
+                await asyncio.sleep(5)
 
     async def handler(self, websocket, path=None):
         while self.run_session:
@@ -177,19 +180,17 @@ class WsServer:
 
             asyncio.get_event_loop().run_forever()
 
-    def connect_server(self):
-
+    async def connect_server(self):
         if self.console.run_mode == Console.run_mode_dev:
             self.uri = f'ws://127.0.0.1:{self.console.config.server_port}'
         else:
             self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
 
-        self.logger.show(
-            Logger.INFO,
-            'uri',
-            self.uri)
+        heardbeat_msg = Msg(
+            operate=Msg.key_heartbeat)
 
-        return websockets.connect(self.uri)
+        async with websockets.connect(self.uri) as ws:
+            await self.handler(ws)
 
     def connect_thread(self):
 
@@ -201,9 +202,7 @@ class WsServer:
             'uri',
             '=============================')
 
-        self._websocket = self.connect_server()
-
-        asyncio.get_event_loop().run_until_complete(self.handler(self._websocket))
+        asyncio.get_event_loop().run_until_complete(self.connect_server())
 
     def connect_setup(self):
 
