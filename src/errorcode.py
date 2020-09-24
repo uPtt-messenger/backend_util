@@ -10,3 +10,4 @@ class ErrorCode:
     UserOffLine = 6
     Unsupported = 7
     TokenNotMatch = 8
+    ErrorParameter = 9
