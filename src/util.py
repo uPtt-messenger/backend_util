@@ -2,8 +2,8 @@ import hashlib
 from zipfile import ZipFile
 
 
-def sha256(ptt_id):
-    s_lower = ptt_id.lower()
+def sha256(value):
+    s_lower = value.lower()
     hash_value = hashlib.sha256(s_lower.encode('utf-8')).hexdigest()
     return hash_value
 
@@ -27,9 +27,15 @@ def compare_version(a, b):
 
 def generate_token():
     import random
-    import string
+    # import string
+    #
+    # letters = string.ascii_lowercase + string.ascii_uppercase
+    # rand_str = ''.join(random.choice(letters) for i in range(256))
+    #
+    # return sha256(f'{rand_str}')
 
-    letters = string.ascii_lowercase + string.ascii_uppercase
-    rand_str = ''.join(random.choice(letters) for i in range(256))
+    random_value = random.getrandbits(256)
+    current_token = hex(random_value)
+    # print(current_token)
 
-    return sha256(f'{rand_str}')
+    return current_token
