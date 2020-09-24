@@ -70,8 +70,7 @@ class WsServer:
                     recv_msg_str = await ws.recv()
                 except Exception as e:
                     print('Connection Close: recv fail')
-                    recv_msg_str = None
-                    # raise ValueError('Connection Close: recv fail')
+                    raise ValueError('Connection Close: recv fail')
 
                 self.logger.show(
                     Logger.INFO,
