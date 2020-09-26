@@ -1,5 +1,4 @@
 class Console:
-
     run_mode_dev = 'dev'
     run_mode_release = 'release'
 
@@ -14,6 +13,7 @@ class Console:
         self.config = None
         self.event = None
         self.role = None
+        self.ptt_adapter = None
 
         ##################################
         # client
@@ -26,4 +26,6 @@ class Console:
 
         ##################################
         # server
+
         self.token_list = dict()
+        self.ws_server = None

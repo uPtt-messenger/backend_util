@@ -9,13 +9,17 @@ from SingleLog.log import Logger
 
 from .msg import Msg
 from .console import Console
+from .event import EventConsole
 
 
 class WsServer:
 
-    def __init__(self, console_obj):
+    def __init__(self, console_obj, log_prefix: str = None):
 
-        self.logger = Logger('WsServer', console_obj.config.log_level, handler=console_obj.config.log_handler)
+        if log_prefix is None:
+            log_prefix = 'WsServer'
+        self.logger = Logger(log_prefix, console_obj.config.log_level, handler=console_obj.config.log_handler)
+
 
         self.logger.show(
             Logger.INFO,
@@ -29,6 +33,10 @@ class WsServer:
         self.run_session = True
         self.run = True
         self.server_start = False
+
+        self.console.event.register(
+            EventConsole.key_close,
+            self.stop)
 
         self.logger.show(
             Logger.INFO,
@@ -52,11 +60,10 @@ class WsServer:
             Logger.INFO,
             '執行終止程序')
 
-        while not self.server_start and not self.start_error:
-            time.sleep(0.1)
-
-        self.run_session = False
         self.run = False
+        self.run_session = False
+
+        time.sleep(0.5)
 
         self.logger.show(
             Logger.INFO,
@@ -69,7 +76,6 @@ class WsServer:
                 try:
                     recv_msg_str = await ws.recv()
                 except Exception as e:
-                    print('Connection Close: recv fail')
                     raise ValueError('Connection Close: recv fail')
 
                 self.logger.show(
@@ -101,15 +107,9 @@ class WsServer:
                             '收到權杖',
                             token)
                         recv_msg.add(Msg.key_token, token)
-
-                # print(str(recv_msg))
                 self.console.command.analyze(recv_msg)
-                # await ws.send(recv_msg)
-                # print(f'echo complete')
             except Exception as e:
-                traceback.print_tb(e.__traceback__)
-                print(e)
-                print('Connection Close')
+                # traceback.print_tb(e.__traceback__)
                 self.run_session = False
                 break
 
@@ -119,16 +119,28 @@ class WsServer:
             while self.console.command.push_msg:
                 push_msg = self.console.command.push_msg.pop()
 
-                print(f'push [{push_msg}]')
+                self.logger.show(Logger.INFO, 'push to frontend', push_msg)
                 try:
                     await ws.send(push_msg)
                 except websockets.exceptions.ConnectionClosedOK:
-                    print(f'push fail')
+                    self.logger.show(Logger.INFO, 'push to frontend', 'Fail')
                     break
-            if self.console.role == Console.role_client:
-                await asyncio.sleep(0.1)
-            else:
-                await asyncio.sleep(5)
+            await asyncio.sleep(0.1)
+
+    async def producer_handler_to_server(self, ws, path):
+
+        while self.run_session:
+            while self.console.server_command.push_msg:
+                push_msg = self.console.server_command.push_msg.pop()
+
+                self.logger.show(Logger.INFO, 'push to server', push_msg)
+
+                try:
+                    await ws.send(push_msg)
+                except websockets.exceptions.ConnectionClosedOK:
+                    self.logger.show(Logger.INFO, 'push to frontend', 'Fail')
+                    break
+            await asyncio.sleep(0.1)
 
     async def handler(self, websocket, path=None):
         while self.run_session:
@@ -137,6 +149,22 @@ class WsServer:
 
             producer_task = asyncio.ensure_future(
                 self.producer_handler(websocket, path))
+
+            _, pending = await asyncio.wait(
+                [consumer_task, producer_task],
+                return_when=asyncio.FIRST_COMPLETED)
+            for task in pending:
+                task.cancel()
+
+        self.run_session = self.run
+
+    async def handler_to_server(self, websocket, path=None):
+        while self.run_session:
+            consumer_task = asyncio.ensure_future(
+                self.consumer_handler(websocket, path))
+
+            producer_task = asyncio.ensure_future(
+                self.producer_handler_to_server(websocket, path))
 
             _, pending = await asyncio.wait(
                 [consumer_task, producer_task],
@@ -189,7 +217,7 @@ class WsServer:
             operate=Msg.key_heartbeat)
 
         async with websockets.connect(self.uri) as ws:
-            await self.handler(ws)
+            await self.handler_to_server(ws)
 
     def connect_thread(self):
 

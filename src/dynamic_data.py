@@ -4,12 +4,13 @@ import time
 import urllib.request
 
 from SingleLog.log import Logger
+from .console import Console
 from .config import Config
 from .event import EventConsole
 
 
 class DynamicData:
-    def __init__(self, console_obj, run=True):
+    def __init__(self, console_obj):
 
         self.logger = Logger('DynamicData', console_obj.config.log_level, handler=console_obj.config.log_handler)
 
@@ -23,6 +24,7 @@ class DynamicData:
 
         self.run_update = True
         self.update_state = False
+        self.update_thread = None
 
         self.logger.show(
             Logger.INFO,
@@ -31,13 +33,6 @@ class DynamicData:
 
         self.update()
 
-        if run:
-            self.update_thread = threading.Thread(
-                target=self.run,
-                daemon=True)
-
-            self.update_thread.start()
-
     def event_close(self, p):
 
         self.logger.show(
@@ -45,7 +40,8 @@ class DynamicData:
             '執行終止程序')
 
         self.run_update = False
-        self.update_thread.join()
+        if self.update_thread is not None:
+            self.update_thread.join()
 
         self.logger.show(
             Logger.INFO,
@@ -89,7 +85,11 @@ class DynamicData:
             '更新資料完成')
         self.data = data_temp
 
-        self.console.config.set_value(Config.level_USER, Config.key_version, self.data['version'])
+        if self.console.role == Console.role_client:
+            current_level = Config.level_USER
+        else:
+            current_level = Config.level_SYSTEM
+        self.console.config.set_value(current_level, Config.key_version, self.data['version'])
 
         self.version = self.data['version']
         self.tag_list = self.data['tag']
