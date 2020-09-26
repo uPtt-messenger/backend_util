@@ -35,7 +35,7 @@ def generate_token():
     # return sha256(f'{rand_str}')
 
     random_value = random.getrandbits(256)
-    current_token = hex(random_value)
+    current_token = hex(random_value)[2:]
     # print(current_token)
 
     return current_token
