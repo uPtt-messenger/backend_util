@@ -1,8 +1,11 @@
-import json
+import sys
 import os
+import json
 
 from SingleLog.log import Logger
 from PyPtt import PTT
+
+from .console import Console
 
 log_handler = None
 log_level = Logger.INFO
@@ -45,8 +48,13 @@ class Config:
 
     app_name = 'uPtt'
 
-    key_aes_key = 'aes_key'
+    config_file_name = 'config.json'
+    system_config_file_name = 'system_config.json'
+    friend_file_name = 'friend.txt'
+
     key_version = 'version'
+    key_ptt_id = 'ptt_id'
+    key_ptt_pw = 'ptt_pw'
 
     version = '0.0.1'
     quick_response_time = 0.05
@@ -63,15 +71,13 @@ class Config:
     server_port = 57983
     server_frequency = 60
 
-    def __init__(self):
+    def __init__(self, console_obj):
 
         # 不想給使用者改的設定值就寫在這兒
         # 想給使用者改的就透過 setValue
         # 因為會被存起來
 
-        self.config_file_name = 'config.json'
-        self.system_config_file_name = 'system_config.json'
-        self.friend_file_name = 'friend.txt'
+        self.console = console_obj
 
         self.config_path = None
 
@@ -81,30 +87,78 @@ class Config:
             '初始化',
             '啟動')
 
-        if os.name == 'nt':
-            self.logger.show(
-                Logger.INFO,
-                '作業系統',
-                'Windows')
+        if self.console.role == Console.role_client:
+            # client
+            if os.name == 'nt':
+                self.logger.show(
+                    Logger.INFO,
+                    '作業系統',
+                    'Windows')
 
-            # C:\ProgramData
-            self.config_path = f"{os.environ['ALLUSERSPROFILE']}/{self.app_name}"
+                # C:\ProgramData
+                self.config_path = f"{os.environ['ALLUSERSPROFILE']}/{self.app_name}"
 
-        self.system_config_path = f'{self.config_path}/{self.system_config_file_name}'
-        self.user_config_path = None
+            self.system_config_path = f'{self.config_path}/{self.system_config_file_name}'
+            self.user_config_path = None
 
-        if not os.path.exists(self.config_path):
-            os.makedirs(self.config_path)
+            if not os.path.exists(self.config_path):
+                os.makedirs(self.config_path)
 
-        try:
-            with open(self.system_config_path, encoding='utf8') as f:
-                self.system_data = json.load(f)
-        except FileNotFoundError:
-            self.system_data = dict()
-            self.set_value(self.level_SYSTEM, self.key_version, self.version)
+            try:
+                with open(self.system_config_path, encoding='utf8') as f:
+                    self.system_data = json.load(f)
+            except FileNotFoundError:
+                self.system_data = dict()
+                self.set_value(self.level_SYSTEM, self.key_version, self.version)
 
-        self.user_data = dict()
-        self.id = None
+            self.user_data = dict()
+            self.id = None
+
+        else:
+            # server
+            self.config_path = '.'
+
+            self.system_config_path = f'{self.config_path}/{self.system_config_file_name}'
+
+            recheck = False
+            try:
+                with open(self.system_config_path, encoding='utf8') as f:
+                    self.system_data = json.load(f)
+            except FileNotFoundError:
+                self.system_data = dict()
+                self.logger.show(Logger.INFO, '系統設定檔', '不存在')
+                recheck = True
+
+            if not recheck:
+
+                current_value = self.get_value(self.level_SYSTEM, self.key_ptt_id)
+                if not self.check_value(self.level_SYSTEM, self.key_ptt_id, current_value, ''):
+                    self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_id, '不存在')
+                    self.set_value(self.level_SYSTEM, self.key_ptt_id, '')
+                    recheck = True
+                if len(current_value) == 0:
+                    self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_id, '無實際數值')
+                    recheck = True
+
+                current_value = self.get_value(self.level_SYSTEM, self.key_ptt_pw)
+                if not self.check_value(self.level_SYSTEM, self.key_ptt_pw, current_value, ''):
+                    self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_pw, '不存在')
+                    self.set_value(self.level_SYSTEM, self.key_ptt_pw, '')
+                    recheck = True
+                if len(current_value) == 0:
+                    self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_pw, '無實際數值')
+                    recheck = True
+
+            if recheck:
+                self.logger.show(Logger.INFO, '系統設定檔初始化', '啟動')
+                self.set_value(self.level_SYSTEM, self.key_ptt_id, '')
+                self.set_value(self.level_SYSTEM, self.key_ptt_pw, '')
+                self.logger.show(Logger.INFO, '系統設定檔初始化', '完成')
+                self.logger.show(Logger.INFO, '請修改設定檔內容再執行')
+                sys.exit()
+
+            else:
+                self.logger.show(Logger.INFO, '系統設定檔', '載入成功')
 
         self.logger.show(
             Logger.INFO,
@@ -133,6 +187,12 @@ class Config:
                 self.user_data = json.load(File)
         except FileNotFoundError:
             pass
+
+    def check_value(self, level, key, value, default_value):
+        if value is None:
+            self.set_value(level, key, default_value)
+            return False
+        return True
 
     def get_value(self, level, key):
 
