@@ -1,5 +1,6 @@
 import random
 import hashlib
+import os
 from zipfile import ZipFile
 
 
@@ -32,3 +33,25 @@ def generate_token():
 
     # return 64 char
     return current_token
+
+
+def clean_path(path):
+    path = path.replace('\\', '/')
+    return path
+
+
+def mkdir(path):
+    path = path.replace('\\', '/')
+    if path.endswith('.json'):
+        path = path[:path.rfind('/')]
+
+    for i in range(1, len(path.split('/'))):
+        current_path = '/'.join(path.split('/')[:i + 1])
+        if os.path.exists(current_path):
+            continue
+        os.makedirs(current_path)
+
+
+if __name__ == '__main__':
+    p = 'C:/ProgramData/uPtt/DeepLearning/config.json'
+    mkdir(p)
