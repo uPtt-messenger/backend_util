@@ -1,3 +1,4 @@
+import random
 import hashlib
 from zipfile import ZipFile
 
@@ -26,16 +27,8 @@ def compare_version(a, b):
 
 
 def generate_token():
-    import random
-    # import string
-    #
-    # letters = string.ascii_lowercase + string.ascii_uppercase
-    # rand_str = ''.join(random.choice(letters) for i in range(256))
-    #
-    # return sha256(f'{rand_str}')
-
     random_value = random.getrandbits(256)
     current_token = hex(random_value)[2:]
-    # print(current_token)
 
+    # return 64 char
     return current_token
