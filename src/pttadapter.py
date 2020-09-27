@@ -12,7 +12,7 @@ from backend_util.src import util
 from backend_util.src.event import EventConsole
 
 
-class PTT_Adapter:
+class PTTAdapter:
     def __init__(self, console_obj):
 
         self.logger = Logger('PTTAdapter', console_obj.config.log_level, handler=console_obj.config.log_handler)

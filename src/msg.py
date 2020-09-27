@@ -34,7 +34,7 @@ class Msg:
 
     # server
 
-    key_heartbeat = 'heartbeat'
+    key_get_token = 'server_get_token'
 
     def __init__(self, operate=None, code=None, msg=None, strobj=None, dictobj=None):
 

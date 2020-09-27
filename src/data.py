@@ -2,6 +2,7 @@ import json
 
 from SingleLog.log import Logger
 from backend_util.src import config
+from backend_util.src import util
 
 
 class DictData:
@@ -15,7 +16,15 @@ class DictData:
             '初始化',
             '啟動')
 
+        save_path = util.clean_path(save_path)
+
+        self.logger.show(
+            Logger.INFO,
+            'save_path',
+            save_path)
+
         self.save_path = save_path
+        util.mkdir(self.save_path)
         self.data_name = data_name
         self.data = dict()
 
@@ -25,9 +34,12 @@ class DictData:
             '完成')
 
     def load(self):
-        self.logger.show(Logger.INFO, '載入檔案', '啟動')
+
+        data_file = f'{self.save_path}/{self.data_name}.json'
+
+        self.logger.show(Logger.INFO, '載入檔案', '啟動', data_file)
         try:
-            with open(f'{self.save_path}/{self.data_name}.json', encoding='utf8') as f:
+            with open(data_file, encoding='utf8') as f:
                 temp_data = json.load(f)
         except FileNotFoundError:
             self.logger.show(Logger.INFO, '載入檔案', '失敗', '檔案不存在')
@@ -56,7 +68,7 @@ class DictData:
 
     def _set_value_func(self, key, value):
 
-        self.logger.show(Logger.INFO, '更新資料', '啟動')
+        # self.logger.show(Logger.INFO, '更新資料', '啟動')
 
         value_change = False
         if value is not None:
@@ -87,7 +99,13 @@ class DictData:
         value_change = self._set_value_func(key, value)
         if value_change and self.save_path:
             self.save()
+        return value_change
 
 
 if __name__ == '__main__':
-    pass
+    path = 'D:/git/uPtt/server/src'
+
+    path = path.replace('\\', '/')
+    for i in range(1, len(path.split('/'))):
+        current_path = '/'.join(path.split('/')[:i + 1])
+        print(current_path)

@@ -6,40 +6,11 @@ from SingleLog.log import Logger
 from PyPtt import PTT
 
 from .console import Console
+from .data import DictData
+from backend_util.src import util
 
 log_handler = None
 log_level = Logger.INFO
-
-
-def get_value_func(data, key):
-    if key not in data:
-        return None
-    return data[key]
-
-
-def set_value_func(data, key, value):
-    value_change = False
-    if value is not None:
-        if key not in data:
-            value_change = True
-        elif data[key] != value:
-            value_change = True
-
-        data[key] = value
-    elif key in data:
-        # value is None
-        if key in data:
-            value_change = True
-        del data[key]
-
-    return value_change
-
-
-def write_config(path, data):
-    if path is None or data is None:
-        return
-    with open(path, 'w', encoding='utf8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
 
 
 class Config:
@@ -98,67 +69,57 @@ class Config:
                 # C:\ProgramData
                 self.config_path = f"{os.environ['ALLUSERSPROFILE']}/{self.app_name}"
 
-            self.system_config_path = f'{self.config_path}/{self.system_config_file_name}'
+            self.system_config_path = None
             self.user_config_path = None
 
-            if not os.path.exists(self.config_path):
-                os.makedirs(self.config_path)
+            util.mkdir(self.config_path)
 
-            try:
-                with open(self.system_config_path, encoding='utf8') as f:
-                    self.system_data = json.load(f)
-            except FileNotFoundError:
-                self.system_data = dict()
-                self.set_value(self.level_SYSTEM, self.key_version, self.version)
-
-            self.user_data = dict()
+            self.user_data = None
             self.id = None
 
         else:
             # server
             self.config_path = '.'
+            self.system_config_path = '.'
 
-            self.system_config_path = f'{self.config_path}/{self.system_config_file_name}'
+            self.system_data = DictData(
+                self.console,
+                self.system_config_path,
+                'SystemConfig')
 
-            recheck = False
-            try:
-                with open(self.system_config_path, encoding='utf8') as f:
-                    self.system_data = json.load(f)
-            except FileNotFoundError:
-                self.system_data = dict()
-                self.logger.show(Logger.INFO, '系統設定檔', '不存在')
-                recheck = True
+            load_default = False
+            if not self.system_data.load():
+                # 載入系統預設資料
+                load_default = True
 
-            if not recheck:
+            if not load_default:
 
-                current_value = self.get_value(self.level_SYSTEM, self.key_ptt_id)
-                if not self.check_value(self.level_SYSTEM, self.key_ptt_id, current_value, ''):
+                current_value = self.system_data.get_value(self.key_ptt_id)
+                if not current_value:
                     self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_id, '不存在')
-                    self.set_value(self.level_SYSTEM, self.key_ptt_id, '')
-                    recheck = True
-                if len(current_value) == 0:
+                    load_default = True
+                elif len(current_value) == 0:
                     self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_id, '無實際數值')
-                    recheck = True
+                    load_default = True
 
-                current_value = self.get_value(self.level_SYSTEM, self.key_ptt_pw)
-                if not self.check_value(self.level_SYSTEM, self.key_ptt_pw, current_value, ''):
+                current_value = self.system_data.get_value(self.key_ptt_pw)
+                if not current_value:
                     self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_pw, '不存在')
-                    self.set_value(self.level_SYSTEM, self.key_ptt_pw, '')
-                    recheck = True
-                if len(current_value) == 0:
+                    load_default = True
+                elif len(current_value) == 0:
                     self.logger.show(Logger.INFO, f'系統設定檔值', self.key_ptt_pw, '無實際數值')
-                    recheck = True
+                    load_default = True
 
-            if recheck:
+            if load_default:
                 self.logger.show(Logger.INFO, '系統設定檔初始化', '啟動')
-                self.set_value(self.level_SYSTEM, self.key_ptt_id, '')
-                self.set_value(self.level_SYSTEM, self.key_ptt_pw, '')
+                self.system_data.set_value(self.key_ptt_id, '')
+                self.system_data.set_value(self.key_ptt_pw, '')
                 self.logger.show(Logger.INFO, '系統設定檔初始化', '完成')
                 self.logger.show(Logger.INFO, '請修改設定檔內容再執行')
                 sys.exit()
 
             else:
-                self.logger.show(Logger.INFO, '系統設定檔', '載入成功')
+                self.logger.show(Logger.INFO, '系統設定檔', '設定檢查', '成功')
 
         self.logger.show(
             Logger.INFO,
@@ -168,25 +129,26 @@ class Config:
     def init_user(self, ptt_id):
         self.logger.show(
             Logger.INFO,
-            '使用者空間初始化',
+            '使用者設定值初始化',
             ptt_id)
         self.id = ptt_id
-        self.user_config_path = f'{self.config_path}/{ptt_id}/{self.config_file_name}'
-        if not os.path.exists(f'{self.config_path}/{ptt_id}'):
-            os.makedirs(f'{self.config_path}/{ptt_id}')
+        self.user_config_path = f'{self.config_path}/{ptt_id}'
 
-            # init user config here
-
-        self.logger.show(
-            Logger.INFO,
-            '使用者設定初始化',
-            ptt_id)
-
-        try:
-            with open(self.user_config_path, encoding='utf8') as File:
-                self.user_data = json.load(File)
-        except FileNotFoundError:
+        self.system_data = DictData(
+            self.console,
+            self.user_config_path,
+            'system_config')
+        if not self.system_data.load():
+            # 載入系統預設資料
             pass
+
+        self.user_data = DictData(
+            self.console,
+            self.user_config_path,
+            'config')
+        if not self.user_data.load():
+            # init user config
+            self.user_data.set_value(self.key_ptt_id, self.id)
 
     def check_value(self, level, key, value, default_value):
         if value is None:
@@ -197,22 +159,17 @@ class Config:
     def get_value(self, level, key):
 
         if level == self.level_SYSTEM:
-            return get_value_func(self.system_data, key)
+            return self.system_data.get_value(key)
         elif level == self.level_USER:
-            return get_value_func(self.user_data, key)
+            return self.user_data.get_value(key)
         else:
             raise ValueError()
 
     def set_value(self, level, key, value):
 
         if level == self.level_SYSTEM:
-            value_change = set_value_func(self.system_data, key, value)
-            if value_change:
-                write_config(self.system_config_path, self.system_data)
-
+            self.system_data.set_value(key, value)
         elif level == self.level_USER:
-            value_change = set_value_func(self.user_data, key, value)
-            if value_change:
-                write_config(self.user_config_path, self.user_data)
+            self.user_data.set_value(key, value)
         else:
             raise ValueError()

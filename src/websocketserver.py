@@ -14,12 +14,9 @@ from .event import EventConsole
 
 class WsServer:
 
-    def __init__(self, console_obj, log_prefix: str = None):
+    def __init__(self, console_obj, to_server: bool):
 
-        if log_prefix is None:
-            log_prefix = 'WsServer'
-        self.logger = Logger(log_prefix, console_obj.config.log_level, handler=console_obj.config.log_handler)
-
+        self.logger = Logger(('WsServer' if to_server else 'Client-WsServer'), console_obj.config.log_level, handler=console_obj.config.log_handler)
 
         self.logger.show(
             Logger.INFO,
@@ -27,6 +24,7 @@ class WsServer:
             '啟動')
 
         self.console = console_obj
+        self.to_server = to_server
 
         self.thread = None
         self.start_error = False
@@ -107,7 +105,11 @@ class WsServer:
                             '收到權杖',
                             token)
                         recv_msg.add(Msg.key_token, token)
-                self.console.command.analyze(recv_msg)
+
+                if self.to_server:
+                    self.console.server_command.analyze(recv_msg)
+                else:
+                    self.console.command.analyze(recv_msg)
             except Exception as e:
                 # traceback.print_tb(e.__traceback__)
                 self.run_session = False
@@ -208,14 +210,6 @@ class WsServer:
             asyncio.get_event_loop().run_forever()
 
     async def connect_server(self):
-        if self.console.run_mode == Console.run_mode_dev:
-            self.uri = f'ws://127.0.0.1:{self.console.config.server_port}'
-        else:
-            self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
-
-        heardbeat_msg = Msg(
-            operate=Msg.key_heartbeat)
-
         async with websockets.connect(self.uri) as ws:
             await self.handler_to_server(ws)
 
@@ -233,10 +227,15 @@ class WsServer:
 
     def connect_setup(self):
 
+        if self.console.run_mode == Console.run_mode_dev:
+            self.uri = f'ws://127.0.0.1:{self.console.config.server_port}'
+        else:
+            self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
+
         self.logger.show(
             Logger.INFO,
             '啟動連線',
-            f'{self.console.dynamic_data.online_server}')
+            self.uri)
 
         t = threading.Thread(target=self.connect_thread)
         t.daemon = True

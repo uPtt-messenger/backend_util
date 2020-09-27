@@ -22,10 +22,12 @@ class Console:
 
         self.login_token = None
         self.ptt_id = None
+        self.ptt_pw = None
         self.dialogue = None
 
         ##################################
         # server
 
-        self.token_list = dict()
+        self.token_list = None
         self.ws_server = None
+        self.server_command = None

@@ -85,12 +85,6 @@ class DynamicData:
             '更新資料完成')
         self.data = data_temp
 
-        if self.console.role == Console.role_client:
-            current_level = Config.level_USER
-        else:
-            current_level = Config.level_SYSTEM
-        self.console.config.set_value(current_level, Config.key_version, self.data['version'])
-
         self.version = self.data['version']
         self.tag_list = self.data['tag']
         self.black_list = self.data['black_list']

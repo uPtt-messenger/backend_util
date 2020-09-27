@@ -14,12 +14,14 @@ class EventConsole:
     key_send_waterball = 'send_waterball'
 
     # server
+    key_send_token = 'send_token'
 
     def __init__(self, console_obj):
         self.console = console_obj
 
         self.logger = Logger('EventConsole', self.console.config.log_level, handler=self.console.config.log_handler)
 
+        self.is_thread_running = False
         self.event_chain = dict()
 
     def register(self, event_chain_name, func):
@@ -41,12 +43,14 @@ class EventConsole:
 
         self.logger.show(Logger.INFO, f'線程事件通知鏈 {event_chain_name}', '完成')
 
+        self.is_thread_running = False
+
     def execute(self, event_chain_name, run_thread: bool = False, parameter: tuple = None):
 
         if run_thread:
             t = threading.Thread(target=self._execute_thread, args=(event_chain_name, parameter))
+            self.is_thread_running = True
             t.start()
-
         else:
 
             if event_chain_name not in self.event_chain:
