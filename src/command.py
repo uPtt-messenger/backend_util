@@ -1,6 +1,8 @@
+import time
 import threading
 
 from SingleLog.log import Logger
+from PyPtt import PTT
 
 from backend_util.src.event import EventConsole
 from backend_util.src.errorcode import ErrorCode
@@ -25,6 +27,8 @@ class Command:
         self.send_waterball_id = None
         self.send_waterball_content = None
         self.add_friend_id = None
+        self.parameter = None
+        self.res_msg = None
 
         self.console = console_obj
         self.to_server = to_server
@@ -43,17 +47,55 @@ class Command:
 
         return self.console.login_token == current_token
 
+    def _get_token_thread(self):
+        for e in self.console.event.event_chain[EventConsole.key_send_token]:
+            self.res_msg = e(self.parameter)
+
     def analyze(self, recv_msg: Msg):
 
         opt = recv_msg.get(Msg.key_opt)
-        if opt == 'echo':
+        if opt == Msg.key_get_token:
+
+            if self.console.role == Console.role_server:
+
+                current_ptt_id = recv_msg.get(Msg.key_ptt_id)
+                if current_ptt_id is None:
+                    return
+                self.logger.show(Logger.INFO, 'ptt_id', current_ptt_id)
+
+                current_token = util.generate_token()
+                self.logger.show(Logger.INFO, 'token', current_token)
+
+                ptt_id = self.console.config.get_value(Config.level_SYSTEM, Config.key_ptt_id)
+                ptt_pw = self.console.config.get_value(Config.level_SYSTEM, Config.key_ptt_pw)
+
+                self.ptt_bot_lock.acquire()
+                try:
+                    self.parameter = (ptt_id, ptt_pw, current_ptt_id, current_token)
+                    t = threading.Thread(target=self._get_token_thread)
+                    t.start()
+                    t.join()
+                finally:
+                    self.ptt_bot_lock.release()
+
+                # Update token
+                self.console.token_list.set_value(current_ptt_id.lower(), current_token)
+                self.push(self.res_msg)
+            else:
+                # {"operation": "server_get_token", "code": 0, "msg": "Success"}
+                print('!!!!!!!!!!!!!!!!!')
+                error_code = recv_msg.get(Msg.key_code)
+                if error_code == ErrorCode.Success:
+                    pass
+
+        elif opt == 'echo':
             current_res_msg = Msg(
                 operate=opt,
                 code=ErrorCode.Success,
                 msg=recv_msg.get(Msg.key_msg))
             self.push(current_res_msg)
 
-        if opt == 'login':
+        elif opt == 'login':
             ptt_id = recv_msg.get(Msg.key_payload)[Msg.key_ptt_id]
             ptt_pass = recv_msg.get(Msg.key_payload)[
                 Msg.key_ptt_pass]
@@ -165,37 +207,6 @@ class Command:
             self.push(current_res_msg)
         elif opt == 'addfriend':
             self.add_friend_id = recv_msg.get(Msg.key_payload)[Msg.key_ptt_id]
-
-        elif opt == Msg.key_get_token:
-            current_ptt_id = recv_msg.get(Msg.key_ptt_id)
-            if current_ptt_id is None:
-                return
-            self.logger.show(Logger.INFO, 'ptt_id', current_ptt_id)
-
-            current_token = util.generate_token()
-            self.logger.show(Logger.INFO, 'token', current_token)
-
-            ptt_id = self.console.config.get_value(Config.level_SYSTEM, Config.key_ptt_id)
-            ptt_pw = self.console.config.get_value(Config.level_SYSTEM, Config.key_ptt_pw)
-
-            self.ptt_bot_lock.acquire()
-
-            try:
-                self.console.event.execute(
-                    EventConsole.key_send_token,
-                    parameter=(ptt_id, ptt_pw, current_ptt_id, current_token),
-                    run_thread=True)
-            finally:
-                self.ptt_bot_lock.release()
-
-            # Update token
-            self.console.token_list.set_value(current_ptt_id.lower(), current_token)
-
-            res_msg = Msg(
-                operate=Msg.key_get_token,
-                code=ErrorCode.Success,
-                msg='Please check ptt mail box')
-            self.push(res_msg)
 
         else:
             if self.to_server:
