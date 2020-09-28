@@ -218,11 +218,6 @@ class WsServer:
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
 
-        self.logger.show(
-            Logger.INFO,
-            'uri',
-            '=============================')
-
         asyncio.get_event_loop().run_until_complete(self.connect_server())
 
     def connect_setup(self):

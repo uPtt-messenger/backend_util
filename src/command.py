@@ -83,10 +83,13 @@ class Command:
                 self.push(self.res_msg)
             else:
                 # {"operation": "server_get_token", "code": 0, "msg": "Success"}
-                print('!!!!!!!!!!!!!!!!!')
                 error_code = recv_msg.get(Msg.key_code)
                 if error_code == ErrorCode.Success:
-                    pass
+                    self.logger.show(Logger.INFO, '伺服器已經送出 token')
+                    self.console.event.execute(EventConsole.key_get_token)
+                else:
+                    # 送訊息到前端
+                    self.console.command.push(Msg)
 
         elif opt == 'echo':
             current_res_msg = Msg(

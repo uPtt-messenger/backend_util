@@ -24,6 +24,7 @@ class Console:
         self.ptt_id = None
         self.ptt_pw = None
         self.dialogue = None
+        self.token = None
 
         ##################################
         # server

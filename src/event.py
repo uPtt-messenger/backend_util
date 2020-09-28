@@ -15,6 +15,7 @@ class EventConsole:
 
     # server
     key_send_token = 'send_token'
+    key_get_token = 'get_token'
 
     def __init__(self, console_obj):
         self.console = console_obj

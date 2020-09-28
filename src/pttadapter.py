@@ -3,13 +3,14 @@ import threading
 import time
 
 from PyPtt import PTT
-
 from SingleLog.log import Logger
-from dialogue import Dialogue
+
+from backend_util.src.console import Console
 from backend_util.src.errorcode import ErrorCode
 from backend_util.src.msg import Msg
 from backend_util.src import util
 from backend_util.src.event import EventConsole
+from backend_util.src.crypto import Crypto
 
 
 class PTTAdapter:
@@ -24,14 +25,15 @@ class PTTAdapter:
 
         self.console = console_obj
 
-        self.console.event.register(EventConsole.key_login, self.event_login)
-        self.console.event.register(EventConsole.key_logout, self.event_logout)
-        self.console.event.register(EventConsole.key_close, self.event_logout)
-        self.console.event.register(EventConsole.key_close, self.event_close)
-        self.console.event.register(EventConsole.key_send_waterball, self.event_send_waterball)
-
-        # server
-        self.console.event.register(EventConsole.key_send_token, self.event_send_token)
+        if self.console.role == Console.role_client:
+            self.console.event.register(EventConsole.key_login, self.event_login)
+            self.console.event.register(EventConsole.key_logout, self.event_logout)
+            self.console.event.register(EventConsole.key_close, self.event_logout)
+            self.console.event.register(EventConsole.key_close, self.event_close)
+            self.console.event.register(EventConsole.key_send_waterball, self.event_send_waterball)
+            self.console.event.register(EventConsole.key_get_token, self.event_get_token)
+        else:
+            self.console.event.register(EventConsole.key_send_token, self.event_send_token)
 
         self.dialogue = None
 
@@ -50,6 +52,7 @@ class PTTAdapter:
         self.send_waterball_list = []
         self.send_waterball_complete = True
         self.send_waterball = False
+        self.find_token = False
 
         self.init_bot()
 
@@ -118,9 +121,9 @@ class PTTAdapter:
         ptt_id, ptt_pw, target_id, token = parameter
 
         content = list()
-        content.append('------- uPtt token start -------')
+        content.append(self.console.config.token_start)
         content.append(token)
-        content.append('------- uPtt token end -------')
+        content.append(self.console.config.token_end)
         content.append('請勿刪除此信 by uPtt')
         content = '\r'.join(content)
 
@@ -175,7 +178,13 @@ class PTTAdapter:
             code=ErrorCode.Success,
             msg='Success')
 
-    def event_get_token(self):
+    def event_get_token(self, _):
+        self.find_token = True
+
+        while self.find_token:
+            time.sleep(0.1)
+
+    def _event_get_token(self, _):
         self.logger.show(
             Logger.INFO,
             '搜尋 Token')
@@ -186,7 +195,7 @@ class PTTAdapter:
             '最新信件編號',
             mail_index)
 
-        token_index = 0
+        find_token = False
         key_index = 0
         for i in reversed(range(1, mail_index + 1)):
             self.logger.show(
@@ -198,17 +207,27 @@ class PTTAdapter:
             if mail_info.title is None:
                 continue
 
-            if 'uPtt token' in mail_info.title:
-                token_index = i
-                print(mail_info.content)
+            if 'uPtt token' in mail_info.title and \
+                    self.console.config.token_start in mail_info.content and \
+                    self.console.config.token_end in mail_info.content:
+                find_token = True
+                self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+                token = mail_info.content
+                token = token[token.find(self.console.config.token_start):]
+                token = token[len(self.console.config.token_start):]
+                token = token[:token.find(self.console.config.token_end)]
+                self.logger.show(Logger.INFO, 'token', token)
+                # print(mail_info.content)
 
-        if token_index == 0 or True:
+        if not find_token:
             push_msg = Msg(operate=Msg.key_get_token)
             push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
             self.console.server_command.push(push_msg)
 
         elif key_index == 0:
+            # generate key
             pass
+
     def run(self):
 
         self.logger.show(
@@ -295,7 +314,7 @@ class PTTAdapter:
                     self.ptt_id = None
                     self.ptt_pw = None
 
-                    ddddd
+                    self._event_get_token(None)
 
                 if self.login:
 
@@ -359,6 +378,10 @@ class PTTAdapter:
 
                         self.send_waterball_complete = True
                         self.send_waterball = False
+
+                    if self.find_token:
+                        self._event_get_token(None)
+                        self.find_token = False
 
                     # addfriend_id = self.command.addfriend()
                     # if addfriend_id is not None:

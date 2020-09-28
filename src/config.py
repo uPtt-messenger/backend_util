@@ -42,6 +42,9 @@ class Config:
     server_port = 57983
     server_frequency = 60
 
+    token_start = '------- uPtt token start -------'
+    token_end = '------- uPtt token end -------'
+
     def __init__(self, console_obj):
 
         # 不想給使用者改的設定值就寫在這兒
