@@ -29,8 +29,8 @@ class PTTAdapter:
         self.console.event.register(EventConsole.key_close, self.event_logout)
         self.console.event.register(EventConsole.key_close, self.event_close)
         self.console.event.register(EventConsole.key_send_waterball, self.event_send_waterball)
-        # server
 
+        # server
         self.console.event.register(EventConsole.key_send_token, self.event_send_token)
 
         self.dialogue = None
@@ -124,16 +124,91 @@ class PTTAdapter:
         content.append('請勿刪除此信 by uPtt')
         content = '\r'.join(content)
 
+        max_try = 3
         self.bot = PTT.API()
+        for try_count in range(max_try):
+            try:
+                self.bot.login(ptt_id, ptt_pw, kick_other_login=True)
+                break
+            except PTT.exceptions.LoginError:
+                self.logger.show(Logger.INFO, '登入失敗')
+                return Msg(
+                    operate=Msg.key_get_token,
+                    code=ErrorCode.UnknownError,
+                    msg='Unknown Error')
+            except PTT.exceptions.WrongIDorPassword:
+                self.logger.show(Logger.INFO, '帳號密碼錯誤')
+                return Msg(
+                    operate=Msg.key_get_token,
+                    code=ErrorCode.WrongIDPW,
+                    msg='Wrong PTT ID PW')
+            except PTT.exceptions.LoginTooOften:
+                if try_count != max_try - 1:
+                    self.logger.show(Logger.INFO, '請稍等一下再登入')
+                    time.sleep(5)
+                else:
+                    return Msg(
+                        operate=Msg.key_get_token,
+                        code=ErrorCode.TryLater,
+                        msg='Try Later')
 
-        self.bot.login(ptt_id, ptt_pw, kick_other_login=True)
-        self.bot.mail(
-            target_id,
-            'uPtt token',
-            content,
-            0)
-        self.bot.logout()
+        res_msg = None
+        try:
+            self.bot.mail(
+                target_id,
+                'uPtt token',
+                content,
+                0)
+        except PTT.exceptions.NoSuchUser:
+            res_msg = Msg(
+                operate=Msg.key_get_token,
+                code=ErrorCode.NoSuchUser,
+                msg='NoSuchUser')
+        finally:
+            self.bot.logout()
 
+        if res_msg is not None:
+            return res_msg
+
+        return Msg(
+            operate=Msg.key_get_token,
+            code=ErrorCode.Success,
+            msg='Success')
+
+    def event_get_token(self):
+        self.logger.show(
+            Logger.INFO,
+            '搜尋 Token')
+
+        mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
+        self.logger.show(
+            Logger.INFO,
+            '最新信件編號',
+            mail_index)
+
+        token_index = 0
+        key_index = 0
+        for i in reversed(range(1, mail_index + 1)):
+            self.logger.show(
+                Logger.INFO,
+                '檢查信件編號',
+                i)
+
+            mail_info = self.bot.get_mail(i)
+            if mail_info.title is None:
+                continue
+
+            if 'uPtt token' in mail_info.title:
+                token_index = i
+                print(mail_info.content)
+
+        if token_index == 0 or True:
+            push_msg = Msg(operate=Msg.key_get_token)
+            push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+            self.console.server_command.push(push_msg)
+
+        elif key_index == 0:
+            pass
     def run(self):
 
         self.logger.show(
@@ -220,36 +295,7 @@ class PTTAdapter:
                     self.ptt_id = None
                     self.ptt_pw = None
 
-                    self.logger.show(
-                        Logger.INFO,
-                        '搜尋金鑰')
-
-                    mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
-                    self.logger.show(
-                        Logger.INFO,
-                        '最新信件編號',
-                        mail_index)
-
-                    token_index = 0
-                    key_index = 0
-                    for i in reversed(range(1, mail_index + 1)):
-                        self.logger.show(
-                            Logger.INFO,
-                            '檢查信件編號',
-                            i)
-
-                        mail_info = self.bot.get_mail(i)
-                        if mail_info.title is None:
-                            continue
-
-                        if 'uPtt token' in mail_info.title:
-                            token_index = i
-                            print(mail_info.content)
-
-                    if token_index == 0:
-                        push_msg = Msg(operate=Msg.key_get_token)
-                        push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
-                        self.console.server_command.push(push_msg)
+                    ddddd
 
                 if self.login:
 

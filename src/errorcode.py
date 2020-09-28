@@ -1,5 +1,3 @@
-
-
 class ErrorCode:
     Success = 0
     WrongIDPW = 1
@@ -11,3 +9,5 @@ class ErrorCode:
     Unsupported = 7
     TokenNotMatch = 8
     ErrorParameter = 9
+    UnknownError = 10
+    TryLater = 11

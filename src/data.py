@@ -17,12 +17,6 @@ class DictData:
             '啟動')
 
         save_path = util.clean_path(save_path)
-
-        self.logger.show(
-            Logger.INFO,
-            'save_path',
-            save_path)
-
         self.save_path = save_path
         util.mkdir(self.save_path)
         self.data_name = data_name
