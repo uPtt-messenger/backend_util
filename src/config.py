@@ -42,8 +42,21 @@ class Config:
     server_port = 57983
     server_frequency = 60
 
-    token_start = '------- uPtt token start -------'
-    token_end = '------- uPtt token end -------'
+    token_title = 'uPtt token'
+    token_start = f'-----BEGIN {token_title}-----'
+    token_end = f'-----END {token_title}-----'
+
+    key_title = 'uPtt key'
+
+    key_private_key = 'PRIVATE KEY'
+    key_private_start = f'-----BEGIN PRIVATE KEY-----'
+    key_private_end = f'-----END PRIVATE KEY-----'
+
+    admin_list = [
+        '6fbc54708c7fcf16ef15511919f203186bfb22bb53b6ad631796d0373a86f400',
+        '7d3850c0f2cdac6cf799a8a5b5f80c803ee250a5cf7f947337e11463661d3999',
+        '6e44bf549ce0fb7c67d9e96d6237f14f19860061393f468c78e7da245cda555a'
+    ]
 
     def __init__(self, console_obj):
 
