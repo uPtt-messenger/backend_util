@@ -121,11 +121,19 @@ class WsServer:
             while self.console.command.push_msg:
                 push_msg = self.console.command.push_msg.pop()
 
-                self.logger.show(Logger.INFO, 'push to frontend', push_msg)
+                if self.console.role == Console.role_client:
+                    role = 'frontend'
+                else:
+                    role = 'client'
+
+                self.logger.show(Logger.INFO, f'push to {role}', push_msg)
                 try:
                     await ws.send(push_msg)
                 except websockets.exceptions.ConnectionClosedOK:
-                    self.logger.show(Logger.INFO, 'push to frontend', 'Fail')
+                    self.logger.show(Logger.INFO, f'push to {role}', 'Fail', 'ConnectionClosedOK')
+                    break
+                except websockets.exceptions.ConnectionClosedError:
+                    self.logger.show(Logger.INFO, f'push to {role}', 'Fail', 'ConnectionClosedOK')
                     break
             await asyncio.sleep(0.1)
 

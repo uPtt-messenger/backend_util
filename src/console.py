@@ -25,10 +25,14 @@ class Console:
         self.ptt_pw = None
         self.dialogue = None
         self.token = None
+        self.public_key = None
+        self.private_key = None
+        self.crypto = None
 
         ##################################
         # server
 
         self.token_list = None
+        self.public_key_list = None
         self.ws_server = None
         self.server_command = None
