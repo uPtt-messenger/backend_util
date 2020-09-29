@@ -52,6 +52,23 @@ def mkdir(path):
         os.makedirs(current_path)
 
 
+def get_substring(main_string, start, end):
+    main_string = main_string[main_string.find(start) + len(start):]
+    main_string = main_string[:main_string.find(end)]
+
+    return main_string.strip()
+
+
+def get_verify_hash(a, b, c):
+    value = f'{a}{b}{c}'
+    return sha256(value)
+
+
 if __name__ == '__main__':
-    p = 'C:/ProgramData/uPtt/DeepLearning/config.json'
-    mkdir(p)
+    import time
+    import datetime
+
+    import pytz
+
+    us = pytz.timezone('US/Pacific')
+    dt = datetime.datetime.strptime('2015-07-03 20:25', '%Y-%m-%d %H:%M').replace(tzinfo=us)
