@@ -10,7 +10,6 @@ from backend_util.src.errorcode import ErrorCode
 from backend_util.src.msg import Msg
 from backend_util.src import util
 from backend_util.src.event import EventConsole
-from backend_util.src.crypto import Crypto
 
 
 class PTTAdapter:
@@ -46,7 +45,7 @@ class PTTAdapter:
         self.run_server = True
         self.login = False
 
-        self.has_new_mail = False
+        self.last_new_mail = 0
         self.res_msg = None
 
         self.send_waterball_list = []
@@ -77,7 +76,7 @@ class PTTAdapter:
 
         self.send_waterball_list = []
 
-        self.has_new_mail = False
+        self.last_new_mail = 0
 
     def event_logout(self, p):
         self.recv_logout = True
@@ -159,7 +158,7 @@ class PTTAdapter:
         try:
             self.bot.mail(
                 target_id,
-                'uPtt token',
+                self.console.config.token_title,
                 content,
                 0)
         except PTT.exceptions.NoSuchUser:
@@ -184,10 +183,30 @@ class PTTAdapter:
         while self.find_token:
             time.sleep(0.1)
 
+    def _check_system_mail(self, mail_info, check_self):
+        author = mail_info.author
+        author = author[:author.find('(')].strip()
+
+        malicious_mail = False
+        if check_self:
+            if self.console.ptt_id != author:
+                malicious_mail = True
+        else:
+            if util.sha256(author) not in self.console.config.admin_list:
+                malicious_mail = True
+
+        if malicious_mail:
+            # 偽造的信
+            self.logger.show(Logger.INFO, '偽造信件', '作者', mail_info.author)
+            self.logger.show(Logger.INFO, '偽造信件', '內容', mail_info.content)
+            return False
+
+        return True
+
     def _event_get_token(self, _):
         self.logger.show(
             Logger.INFO,
-            '搜尋 Token')
+            '搜尋 Token and key')
 
         mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
         self.logger.show(
@@ -196,7 +215,7 @@ class PTTAdapter:
             mail_index)
 
         find_token = False
-        key_index = 0
+        find_key = False
         for i in reversed(range(1, mail_index + 1)):
             self.logger.show(
                 Logger.INFO,
@@ -206,27 +225,102 @@ class PTTAdapter:
             mail_info = self.bot.get_mail(i)
             if mail_info.title is None:
                 continue
+            if mail_info.author is None:
+                continue
+            if mail_info.content is None:
+                continue
 
-            if 'uPtt token' in mail_info.title and \
-                    self.console.config.token_start in mail_info.content and \
-                    self.console.config.token_end in mail_info.content:
+            if self.console.token is None:
+                if self.console.config.token_title in mail_info.title and \
+                        self.console.config.token_start in mail_info.content and \
+                        self.console.config.token_end in mail_info.content:
+
+                    if not self._check_system_mail(mail_info, False):
+                        continue
+
+                    find_token = True
+                    self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+
+                    token = util.get_substring(
+                        mail_info.content,
+                        self.console.config.token_start,
+                        self.console.config.token_end)
+
+                    self.logger.show(Logger.INFO, 'token', token)
+                    self.console.token = token
+
+                    self.console.command.push(Msg)
+            else:
                 find_token = True
-                self.logger.show(Logger.INFO, 'mail content', mail_info.content)
-                token = mail_info.content
-                token = token[token.find(self.console.config.token_start):]
-                token = token[len(self.console.config.token_start):]
-                token = token[:token.find(self.console.config.token_end)]
-                self.logger.show(Logger.INFO, 'token', token)
-                # print(mail_info.content)
+
+            if self.console.public_key is None or self.console.private_key is None:
+                if self.console.config.key_title in mail_info.title and \
+                        self.console.config.key_private_start in mail_info.content and \
+                        self.console.config.key_private_end in mail_info.content:
+
+                    if not self._check_system_mail(mail_info, True):
+                        continue
+
+                    find_key = True
+                    self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+
+                    private_key = util.get_substring(
+                        mail_info.content,
+                        self.console.config.key_private_start,
+                        self.console.config.key_private_end)
+
+                    self.logger.show(
+                        Logger.INFO,
+                        'private_key',
+                        private_key)
+            else:
+                find_key = True
 
         if not find_token:
+
+            self.logger.show(
+                Logger.INFO,
+                '準備請求 token')
+
             push_msg = Msg(operate=Msg.key_get_token)
             push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
             self.console.server_command.push(push_msg)
 
-        elif key_index == 0:
-            # generate key
-            pass
+        elif not find_key:
+            self.logger.show(
+                Logger.INFO,
+                '產生金鑰')
+
+            self.console.crypto.generate_key()
+            public_key, private_key = self.console.crypto.export_key()
+
+            content = list()
+            content.append(private_key)
+            content.append('請勿刪除此信 by uPtt')
+            content = '\r'.join(content)
+            content = content.replace('\n', '\r')
+
+            self.logger.show(
+                Logger.INFO,
+                '備份金鑰')
+
+            self.bot.mail(
+                self.console.ptt_id,
+                self.console.config.key_title,
+                content,
+                0)
+
+            current_time = int(time.time())
+
+            hash_result = util.get_verify_hash(current_time, self.console.token, public_key)
+
+            push_msg = Msg(operate=Msg.key_update_public_key)
+            push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+            push_msg.add(Msg.key_timestamp, current_time)
+            push_msg.add(Msg.key_hash, hash_result)
+            push_msg.add(Msg.key_public_key, public_key)
+
+            self.console.server_command.push(push_msg)
 
     def run(self):
 
@@ -314,7 +408,8 @@ class PTTAdapter:
                     self.ptt_id = None
                     self.ptt_pw = None
 
-                    self._event_get_token(None)
+                    if self.console.token is None:
+                        self._event_get_token(None)
 
                 if self.login:
 
@@ -489,15 +584,13 @@ class PTTAdapter:
                 Logger.DEBUG,
                 '取得新信')
 
-            if new_mail > 0 and not self.has_new_mail:
-                self.has_new_mail = True
+            if new_mail > 0 and new_mail != self.last_new_mail:
+                self.last_new_mail = new_mail
                 push_msg = Msg(
                     operate=Msg.key_notify)
                 push_msg.add(Msg.key_msg, f'You have {new_mail} mails')
 
                 self.console.command.push(push_msg)
-            else:
-                self.has_new_mail = False
 
         self.logger.show(
             Logger.INFO,
