@@ -51,14 +51,30 @@ class Command:
         for e in self.console.event.event_chain[EventConsole.key_send_token]:
             self.res_msg = e(self.parameter)
 
+    def _get_msg_value(self, msg, key):
+        opt = msg.get(Msg.key_opt)
+
+        value = msg.get(key)
+        if value is None:
+            res_msg = Msg(
+                operate=opt,
+                code=ErrorCode.ErrorParameter,
+                msg=f'You must send {key}')
+            self.console.command.push(res_msg)
+            return None
+        return value
+
     def analyze(self, recv_msg: Msg):
 
-        opt = recv_msg.get(Msg.key_opt)
+        opt = self._get_msg_value(recv_msg, Msg.key_opt)
+        if opt is None:
+            return
+
         if opt == Msg.key_get_token:
 
             if self.console.role == Console.role_server:
 
-                current_ptt_id = recv_msg.get(Msg.key_ptt_id)
+                current_ptt_id = self._get_msg_value(recv_msg, Msg.key_ptt_id)
                 if current_ptt_id is None:
                     return
                 self.logger.show(Logger.INFO, 'ptt_id', current_ptt_id)
@@ -83,13 +99,111 @@ class Command:
                 self.push(self.res_msg)
             else:
                 # {"operation": "server_get_token", "code": 0, "msg": "Success"}
-                error_code = recv_msg.get(Msg.key_code)
+                error_code = self._get_msg_value(recv_msg, Msg.key_code)
+                if error_code is None:
+                    return
                 if error_code == ErrorCode.Success:
                     self.logger.show(Logger.INFO, '伺服器已經送出 token')
                     self.console.event.execute(EventConsole.key_get_token)
                 else:
                     # 送訊息到前端
-                    self.console.command.push(Msg)
+                    self.console.command.push(recv_msg)
+
+        elif opt == Msg.key_update_public_key:
+
+            if self.console.role == Console.role_server:
+                ptt_id = self._get_msg_value(recv_msg, Msg.key_ptt_id)
+                if ptt_id is None:
+                    return
+                timestamp = self._get_msg_value(recv_msg, Msg.key_timestamp)
+                if timestamp is None:
+                    return
+                hash_value = self._get_msg_value(recv_msg, Msg.key_hash)
+                if hash_value is None:
+                    return
+                public_key = self._get_msg_value(recv_msg, Msg.key_public_key)
+                if public_key is None:
+                    return
+
+                self.logger.show(
+                    Logger.INFO,
+                    'ptt_id',
+                    ptt_id)
+
+                self.logger.show(
+                    Logger.INFO,
+                    'timestamp',
+                    timestamp)
+
+                self.logger.show(
+                    Logger.INFO,
+                    'hash_value',
+                    hash_value)
+
+                self.logger.show(
+                    Logger.INFO,
+                    'public_key',
+                    public_key)
+
+                current_time = int(time.time())
+                if abs(current_time - timestamp) > 3:
+                    self.logger.show(
+                        Logger.INFO,
+                        'current_time',
+                        current_time)
+
+                    self.logger.show(
+                        Logger.INFO,
+                        'timestamp',
+                        timestamp)
+
+                    res_msg = Msg(
+                        operate=opt,
+                        code=ErrorCode.ErrorParameter,
+                        msg=f'Please check time')
+                    self.console.command.push(res_msg)
+                    return
+                self.logger.show(
+                    Logger.INFO,
+                    '時間驗證',
+                    '通過')
+
+                current_token = self.console.token_list.get_value(ptt_id.lower())
+                if current_token is None:
+                    res_msg = Msg(
+                        operate=opt,
+                        code=ErrorCode.ErrorParameter,
+                        msg=f'Please require token first')
+                    self.console.command.push(res_msg)
+                    return
+                self.logger.show(
+                    Logger.INFO,
+                    '取得 Token',
+                    '成功')
+
+                current_hash = util.get_verify_hash(timestamp, current_token, public_key)
+
+                if current_hash != hash_value:
+                    res_msg = Msg(
+                        operate=opt,
+                        code=ErrorCode.ErrorParameter,
+                        msg=f'Verify fail')
+                    self.console.command.push(res_msg)
+                    return
+                self.logger.show(
+                    Logger.INFO,
+                    '雜湊值驗證',
+                    '成功')
+
+                self.console.public_key_list.set_value(ptt_id.lower(), public_key)
+
+                res_msg = Msg(
+                    operate=opt,
+                    code=ErrorCode.Success,
+                    msg='Update success')
+                self.console.command.push(res_msg)
+            else:
+                self.console.command.push(recv_msg)
 
         elif opt == 'echo':
             current_res_msg = Msg(
