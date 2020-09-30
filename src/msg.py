@@ -51,6 +51,8 @@ class Msg:
 
         if code is not None:
             self.add(self.key_code, code)
+
+        if msg is not None:
             self.add(self.key_msg, msg)
 
         if strobj is not None:

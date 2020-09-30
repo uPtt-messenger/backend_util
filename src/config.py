@@ -42,11 +42,13 @@ class Config:
     server_port = 57983
     server_frequency = 60
 
-    token_title = 'uPtt token'
-    token_start = f'-----BEGIN {token_title}-----'
-    token_end = f'-----END {token_title}-----'
+    system_mail_title = '-----uPtt system-----'
 
-    key_title = 'uPtt key'
+    token_title = 'uPtt token'
+    token_start = f'-----BEGIN uPtt token-----'
+    token_end = f'-----END uPtt token-----'
+
+    key_title = '-----uPtt key-----'
 
     key_private_key = 'PRIVATE KEY'
     key_private_start = f'-----BEGIN PRIVATE KEY-----'

@@ -158,9 +158,10 @@ class PTTAdapter:
         try:
             self.bot.mail(
                 target_id,
-                self.console.config.token_title,
+                self.console.config.system_mail_title,
                 content,
-                0)
+                0,
+                backup=False)
         except PTT.exceptions.NoSuchUser:
             res_msg = Msg(
                 operate=Msg.key_get_token,
@@ -208,7 +209,21 @@ class PTTAdapter:
             Logger.INFO,
             '搜尋 Token and key')
 
-        mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
+        try:
+            mail_index = self.bot.get_newest_index(
+                PTT.data_type.index_type.MAIL,
+                search_type=PTT.data_type.mail_search_type.KEYWORD,
+                search_condition=self.console.config.system_mail_title)
+        except PTT.exceptions.NoSearchResult:
+            self.logger.show(
+                Logger.INFO,
+                '準備請求 token')
+
+            push_msg = Msg(operate=Msg.key_get_token)
+            push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+            self.console.server_command.push(push_msg)
+            return
+
         self.logger.show(
             Logger.INFO,
             '最新信件編號',
@@ -222,7 +237,10 @@ class PTTAdapter:
                 '檢查信件編號',
                 i)
 
-            mail_info = self.bot.get_mail(i)
+            mail_info = self.bot.get_mail(
+                i,
+                search_type=PTT.data_type.mail_search_type.KEYWORD,
+                search_condition=self.console.config.system_mail_title)
             if mail_info.title is None:
                 continue
             if mail_info.author is None:
@@ -230,9 +248,13 @@ class PTTAdapter:
             if mail_info.content is None:
                 continue
 
+            self.logger.show(Logger.INFO, 'mail title', mail_info.title)
+
+            if self.console.config.system_mail_title != mail_info.title:
+                continue
+
             if self.console.token is None:
-                if self.console.config.token_title in mail_info.title and \
-                        self.console.config.token_start in mail_info.content and \
+                if self.console.config.token_start in mail_info.content and \
                         self.console.config.token_end in mail_info.content:
 
                     if not self._check_system_mail(mail_info, False):
@@ -249,13 +271,16 @@ class PTTAdapter:
                     self.logger.show(Logger.INFO, 'token', token)
                     self.console.token = token
 
-                    self.console.command.push(Msg)
+                    push_msg = Msg(
+                        operate=Msg.key_notify,
+                        Msg='get token success')
+
+                    self.console.command.push(push_msg)
             else:
                 find_token = True
 
             if self.console.public_key is None or self.console.private_key is None:
-                if self.console.config.key_title in mail_info.title and \
-                        self.console.config.key_private_start in mail_info.content and \
+                if self.console.config.key_private_start in mail_info.content and \
                         self.console.config.key_private_end in mail_info.content:
 
                     if not self._check_system_mail(mail_info, True):
@@ -306,9 +331,10 @@ class PTTAdapter:
 
             self.bot.mail(
                 self.console.ptt_id,
-                self.console.config.key_title,
+                self.console.config.system_mail_title,
                 content,
-                0)
+                0,
+                backup=False)
 
             current_time = int(time.time())
 
@@ -350,6 +376,10 @@ class PTTAdapter:
                     self.logger.show(
                         Logger.INFO,
                         '執行登入')
+                    self.logger.show(
+                        Logger.INFO,
+                        '登入帳號',
+                        self.ptt_id)
                     try:
                         self.bot.login(
                             self.ptt_id,
