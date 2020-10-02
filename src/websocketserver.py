@@ -194,14 +194,14 @@ class WsServer:
         self.logger.show(
             Logger.INFO,
             '啟動伺服器',
-            f'ws://127.0.0.1:{current_port}')
+            f'ws://0.0.0.0:{current_port}')
 
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
 
         start_server = websockets.serve(
             self.handler,
-            "localhost",
+            "0.0.0.0",
             current_port)
 
         try:
