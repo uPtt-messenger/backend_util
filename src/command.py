@@ -2,7 +2,6 @@ import time
 import threading
 
 from SingleLog.log import Logger
-from PyPtt import PTT
 
 from backend_util.src.event import EventConsole
 from backend_util.src.errorcode import ErrorCode
@@ -10,7 +9,7 @@ from backend_util.src.msg import Msg
 from backend_util.src.console import Console
 from backend_util.src.config import Config
 from backend_util.src import util
-from tag import Tag
+from backend_util.src.tag import Tag
 
 
 class Command:
