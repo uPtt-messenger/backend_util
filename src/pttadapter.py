@@ -213,7 +213,7 @@ class PTTAdapter:
             mail_index = self.bot.get_newest_index(
                 PTT.data_type.index_type.MAIL,
                 search_type=PTT.data_type.mail_search_type.KEYWORD,
-                search_condition=self.console.config.system_mail_title)
+                search_condition=self.console.config.system_mail_key)
         except PTT.exceptions.NoSearchResult:
             self.logger.show(
                 Logger.INFO,
