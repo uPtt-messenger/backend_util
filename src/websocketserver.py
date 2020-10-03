@@ -16,7 +16,8 @@ class WsServer:
 
     def __init__(self, console_obj, to_server: bool):
 
-        self.logger = Logger(('WsServer' if to_server else 'Client-WsServer'), console_obj.config.log_level, handler=console_obj.config.log_handler)
+        self.logger = Logger(('WsServer' if to_server else 'Client-WsServer'), console_obj.config.log_level,
+                             handler=console_obj.config.log_handler)
 
         self.logger.show(
             Logger.INFO,
@@ -31,6 +32,7 @@ class WsServer:
         self.run_session = True
         self.run = True
         self.server_start = False
+        self.connect_server_error = False
 
         self.console.event.register(
             EventConsole.key_close,
@@ -187,21 +189,23 @@ class WsServer:
     def server_setup(self):
 
         if self.console.role == Console.role_client:
+            bind_ip = '127.0.0.1'
             current_port = self.console.config.port
         else:
+            bind_ip = '0.0.0.0'
             current_port = self.console.config.server_port
 
         self.logger.show(
             Logger.INFO,
             '啟動伺服器',
-            f'ws://0.0.0.0:{current_port}')
+            f'ws://{bind_ip}:{current_port}')
 
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
 
         start_server = websockets.serve(
             self.handler,
-            "0.0.0.0",
+            bind_ip,
             current_port)
 
         try:
@@ -226,7 +230,12 @@ class WsServer:
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
 
-        asyncio.get_event_loop().run_until_complete(self.connect_server())
+        self.connect_server_error = False
+        try:
+            asyncio.get_event_loop().run_until_complete(self.connect_server())
+        except ConnectionRefusedError:
+            self.logger.show(Logger.INFO, 'Connect to server error')
+            self.connect_server_error = True
 
     def connect_setup(self):
 
