@@ -42,7 +42,8 @@ class Config:
     server_port = 57983
     server_frequency = 60
 
-    system_mail_title = '-----uPtt system-----'
+    system_mail_key = 'uPtt system'
+    system_mail_title = f'-----{system_mail_key}-----'
 
     token_title = 'uPtt token'
     token_start = f'-----BEGIN uPtt token-----'
@@ -103,7 +104,7 @@ class Config:
             self.system_data = DictData(
                 self.console,
                 self.system_config_path,
-                'SystemConfig')
+                'config')
 
             load_default = False
             if not self.system_data.load():
