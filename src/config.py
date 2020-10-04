@@ -103,8 +103,8 @@ class Config:
 
             self.system_data = DictData(
                 self.console,
-                self.system_config_path,
-                'config')
+                'config',
+                self.system_config_path)
 
             load_default = False
             if not self.system_data.load():
@@ -155,16 +155,16 @@ class Config:
 
         self.system_data = DictData(
             self.console,
-            self.user_config_path,
-            'system_config')
+            'system_config',
+            self.user_config_path)
         if not self.system_data.load():
             # 載入系統預設資料
             pass
 
         self.user_data = DictData(
             self.console,
-            self.user_config_path,
-            'config')
+            'config',
+            self.user_config_path)
         if not self.user_data.load():
             # init user config
             self.user_data.set_value(self.key_ptt_id, self.id)

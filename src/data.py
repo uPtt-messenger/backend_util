@@ -6,7 +6,7 @@ from backend_util.src import util
 
 
 class DictData:
-    def __init__(self, console_obj, save_path, data_name):
+    def __init__(self, console_obj, data_name, save_path):
 
         self.console = console_obj
         self.logger = Logger(f'Data-{data_name}', config.log_level, handler=config.log_handler)
@@ -18,7 +18,8 @@ class DictData:
 
         save_path = util.clean_path(save_path)
         self.save_path = save_path
-        util.mkdir(self.save_path)
+        if self.save_path is not None:
+            util.mkdir(self.save_path)
         self.data_name = data_name
         self.data = dict()
 
