@@ -36,6 +36,8 @@ def generate_token():
 
 
 def clean_path(path):
+    if not path:
+        return None
     path = path.replace('\\', '/')
     return path
 
