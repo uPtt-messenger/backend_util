@@ -36,3 +36,4 @@ class Console:
         self.public_key_list = None
         self.ws_server = None
         self.server_command = None
+        self.connect_list = None
