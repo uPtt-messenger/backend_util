@@ -111,7 +111,15 @@ class WsServer:
                 if self.to_server:
                     self.console.server_command.analyze(recv_msg)
                 else:
-                    self.console.command.analyze(recv_msg)
+                    opt = self.console.command.get_msg_value(recv_msg, Msg.key_opt)
+                    if opt == Msg.key_login_success:
+                        # 唯一一個需要在 websocket server 實作的 api
+                        current_ptt_id = self.console.command.get_msg_value(recv_msg, Msg.key_ptt_id)
+                        if current_ptt_id is None:
+                            return
+
+                    else:
+                        self.console.command.analyze(recv_msg)
             except Exception as e:
                 # traceback.print_tb(e.__traceback__)
                 self.run_session = False
