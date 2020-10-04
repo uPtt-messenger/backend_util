@@ -121,7 +121,7 @@ class WsServer:
 
         while self.run_session:
             while self.console.command.push_msg:
-                push_msg = self.console.command.push_msg.pop()
+                push_msg = self.console.command.push_msg.pop(0)
 
                 if self.console.role == Console.role_client:
                     role = 'frontend'
@@ -143,7 +143,7 @@ class WsServer:
 
         while self.run_session:
             while self.console.server_command.push_msg:
-                push_msg = self.console.server_command.push_msg.pop()
+                push_msg = self.console.server_command.push_msg.pop(0)
 
                 self.logger.show(Logger.INFO, 'push to server', push_msg)
 
