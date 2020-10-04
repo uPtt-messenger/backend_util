@@ -212,12 +212,13 @@ class PTTAdapter:
         try:
             mail_index = self.bot.get_newest_index(
                 PTT.data_type.index_type.MAIL,
-                search_type=PTT.data_type.mail_search_type.KEYWORD,
-                search_condition=self.console.config.system_mail_key)
+                # search_type=PTT.data_type.mail_search_type.KEYWORD,
+                # search_condition=self.console.config.system_mail_key
+            )
         except PTT.exceptions.NoSearchResult:
             self.logger.show(
                 Logger.INFO,
-                '準備請求 token')
+                '無搜尋結果，準備請求 token')
 
             push_msg = Msg(operate=Msg.key_get_token)
             push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
@@ -239,16 +240,15 @@ class PTTAdapter:
 
             mail_info = self.bot.get_mail(
                 i,
-                search_type=PTT.data_type.mail_search_type.KEYWORD,
-                search_condition=self.console.config.system_mail_title)
+                # search_type=PTT.data_type.mail_search_type.KEYWORD,
+                # search_condition=self.console.config.system_mail_key
+            )
             if mail_info.title is None:
                 continue
             if mail_info.author is None:
                 continue
             if mail_info.content is None:
                 continue
-
-            self.logger.show(Logger.INFO, 'mail title', mail_info.title)
 
             if self.console.config.system_mail_title != mail_info.title:
                 continue
@@ -273,7 +273,7 @@ class PTTAdapter:
 
                     push_msg = Msg(
                         operate=Msg.key_notify,
-                        Msg='get token success')
+                        msg='get token success')
 
                     self.console.command.push(push_msg)
             else:
@@ -347,6 +347,11 @@ class PTTAdapter:
             push_msg.add(Msg.key_public_key, public_key)
 
             self.console.server_command.push(push_msg)
+
+        if find_token and find_key:
+            self.ptt_id = None
+            self.ptt_pw = None
+
 
     def run(self):
 
@@ -435,8 +440,6 @@ class PTTAdapter:
                             operate=Msg.key_login,
                             code=ErrorCode.LoginFail,
                             msg='Please wait a moment before login')
-                    self.ptt_id = None
-                    self.ptt_pw = None
 
                     if self.console.token is None:
                         self._event_get_token(None)
