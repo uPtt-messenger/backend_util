@@ -2,9 +2,25 @@ import threading
 
 from SingleLog.log import Logger
 
+from backend_util.src.msg import Msg
+
+
+class Event:
+    def __init__(self, console_obj):
+        self.console = console_obj
+
+        self.logger = Logger('Event', self.console.config.log_level, handler=self.console.config.log_handler)
+
+        self.console.event.register(EventConsole.key_login_success, self.event_login_success)
+
+    def event_login_success(self, _):
+
+        push_msg = Msg(operate=Msg.key_login_success)
+        push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+        self.console.server_command.push(push_msg)
+
 
 class EventConsole:
-
     # client
     key_close = 'close'
     key_login_success = 'login_success'
