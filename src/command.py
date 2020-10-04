@@ -50,7 +50,7 @@ class Command:
         for e in self.console.event.event_chain[EventConsole.key_send_token]:
             self.res_msg = e(self.parameter)
 
-    def _get_msg_value(self, msg, key):
+    def get_msg_value(self, msg, key):
         opt = msg.get(Msg.key_opt)
 
         value = msg.get(key)
@@ -65,7 +65,7 @@ class Command:
 
     def analyze(self, recv_msg: Msg):
 
-        opt = self._get_msg_value(recv_msg, Msg.key_opt)
+        opt = self.get_msg_value(recv_msg, Msg.key_opt)
         if opt is None:
             return
 
@@ -73,7 +73,7 @@ class Command:
 
             if self.console.role == Console.role_server:
 
-                current_ptt_id = self._get_msg_value(recv_msg, Msg.key_ptt_id)
+                current_ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if current_ptt_id is None:
                     return
                 self.logger.show(Logger.INFO, 'ptt_id', current_ptt_id)
@@ -98,7 +98,7 @@ class Command:
                 self.push(self.res_msg)
             else:
                 # {"operation": "server_get_token", "code": 0, "msg": "Success"}
-                error_code = self._get_msg_value(recv_msg, Msg.key_code)
+                error_code = self.get_msg_value(recv_msg, Msg.key_code)
                 if error_code is None:
                     return
                 if error_code == ErrorCode.Success:
@@ -111,16 +111,16 @@ class Command:
         elif opt == Msg.key_update_public_key:
 
             if self.console.role == Console.role_server:
-                ptt_id = self._get_msg_value(recv_msg, Msg.key_ptt_id)
+                ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
                     return
-                timestamp = self._get_msg_value(recv_msg, Msg.key_timestamp)
+                timestamp = self.get_msg_value(recv_msg, Msg.key_timestamp)
                 if timestamp is None:
                     return
-                hash_value = self._get_msg_value(recv_msg, Msg.key_hash)
+                hash_value = self.get_msg_value(recv_msg, Msg.key_hash)
                 if hash_value is None:
                     return
-                public_key = self._get_msg_value(recv_msg, Msg.key_public_key)
+                public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
                 if public_key is None:
                     return
 
