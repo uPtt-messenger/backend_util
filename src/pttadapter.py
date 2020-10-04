@@ -352,6 +352,7 @@ class PTTAdapter:
             self.ptt_id = None
             self.ptt_pw = None
 
+            self.console.event.execute(EventConsole.key_login_success)
 
     def run(self):
 
@@ -422,8 +423,6 @@ class PTTAdapter:
                         payload.add(Msg.key_token, token)
 
                         self.res_msg.add(Msg.key_payload, payload)
-
-                        self.console.event.execute(EventConsole.key_login_success)
 
                     except PTT.exceptions.LoginError:
                         self.res_msg = Msg(
