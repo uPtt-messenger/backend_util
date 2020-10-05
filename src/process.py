@@ -5,7 +5,9 @@ from SingleLog.log import Logger
 
 from backend_util.src.msg import Msg
 from backend_util.src.event import EventConsole
-
+from backend_util.src.errorcode import ErrorCode
+from backend_util.src.msg import Msg
+from backend_util.src import util
 
 class Process:
     def __init__(self, console_obj):
@@ -98,9 +100,38 @@ class Process:
             msg='加密流程成功')
         self.console.command.push(push_msg)
 
-        self.console.event.execute(EventConsole.key_login_success)
+        push_msg = Msg(
+            operate=Msg.key_login,
+            code=ErrorCode.Success,
+            msg='Login success')
+
+        if self.console.run_mode == 'dev':
+            hash_id = util.sha256(self.console.ptt_id)
+            if hash_id == 'c2c10daa1a61f1757019e995223ad346284e13462c62ee9dccac433445248899':
+                token = util.sha256(f'{self.console.ptt_id} fixed token')
+            else:
+                token = util.generate_token()
+        else:
+            token = util.generate_token()
+
+        self.console.login_token = token
+
+        payload = Msg()
+        payload.add(Msg.key_token, token)
+        push_msg.add(Msg.key_payload, payload)
+
+        self.console.command.push(push_msg)
+
+        # 為了 log 呈現上時序不會亂掉 sleep 一下
+        time.sleep(0.01)
+
+        push_msg = Msg(operate=Msg.key_login_success)
+        push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+        self.console.server_command.push(push_msg)
 
         self.logger.show(
             Logger.INFO,
             '登入流程',
             '完成')
+
+        self.console.login_complete = True
