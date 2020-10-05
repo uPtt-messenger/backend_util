@@ -211,17 +211,31 @@ class Command:
                 msg=recv_msg.get(Msg.key_msg))
             self.push(current_res_msg)
 
-        elif opt == 'login':
-            ptt_id = recv_msg.get(Msg.key_payload)[Msg.key_ptt_id]
-            ptt_pass = recv_msg.get(Msg.key_payload)[
-                Msg.key_ptt_pass]
+        elif opt == Msg.key_login:
+
+            payload = self.get_msg_value(recv_msg, Msg.key_payload)
+            if payload is None:
+                return
+            ptt_id = self.get_msg_value(payload, Msg.key_ptt_id)
+            if ptt_id is None:
+                return
+            ptt_pass = self.get_msg_value(payload, Msg.key_ptt_pass)
+            if ptt_pass is None:
+                return
+
+            if self.console.login_complete:
+                push_msg = Msg(
+                    operate=Msg.key_login,
+                    code=ErrorCode.Success,
+                    msg='已經登入')
+                self.console.command.push(push_msg)
+                return
 
             self.logger.show(
                 Logger.INFO,
                 '執行登入程序')
 
             res_msg = None
-
             for e in self.console.event.event_chain[EventConsole.key_login]:
                 current_res_msg = e(ptt_id, ptt_pass)
                 if current_res_msg is None:
@@ -240,18 +254,16 @@ class Command:
                 Logger.INFO,
                 '登入程序全數完成')
 
-        elif opt == 'logout':
+        elif opt == Msg.key_logout:
             self.logger.show(
                 Logger.INFO,
                 '執行登出程序')
-            # for e in self.console.event.logout:
-            #     e()
             self.console.event.execute(EventConsole.key_logout)
             self.logger.show(
                 Logger.INFO,
                 '登出程序全數完成')
 
-        elif opt == 'close':
+        elif opt == Msg.key_close:
             self.logger.show(
                 Logger.INFO,
                 '執行終止程序')
@@ -260,7 +272,7 @@ class Command:
                 Logger.INFO,
                 '終止程序全數完成')
 
-        elif opt == 'sendwaterball':
+        elif opt == Msg.key_sendwaterball:
             if not self.check_token(recv_msg):
                 self.logger.show(
                     Logger.INFO,
