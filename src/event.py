@@ -2,47 +2,6 @@ import threading
 
 from SingleLog.log import Logger
 
-from backend_util.src.errorcode import ErrorCode
-from backend_util.src.msg import Msg
-from backend_util.src import util
-
-
-class Event:
-    def __init__(self, console_obj):
-        self.console = console_obj
-
-        self.logger = Logger('Event', self.console.config.log_level, handler=self.console.config.log_handler)
-
-        self.console.event.register(EventConsole.key_login_success, self.event_login_success)
-
-    def event_login_success(self, _):
-
-        push_msg = Msg(
-            operate=Msg.key_login,
-            code=ErrorCode.Success,
-            msg='Login success')
-
-        if self.console.run_mode == 'dev':
-            hash_id = util.sha256(self.console.ptt_id)
-            if hash_id == 'c2c10daa1a61f1757019e995223ad346284e13462c62ee9dccac433445248899':
-                token = util.sha256(f'{self.console.ptt_id} fixed token')
-            else:
-                token = util.generate_token()
-        else:
-            token = util.generate_token()
-
-        self.console.login_token = token
-
-        payload = Msg()
-        payload.add(Msg.key_token, token)
-        push_msg.add(Msg.key_payload, payload)
-
-        self.console.command.push(push_msg)
-
-        push_msg = Msg(operate=Msg.key_login_success)
-        push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
-        self.console.server_command.push(push_msg)
-
 
 class EventConsole:
     # client
