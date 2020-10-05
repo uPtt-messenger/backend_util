@@ -30,6 +30,7 @@ class Console:
         self.crypto = None
         self.process = None
         self.login_complete = False
+        # self.logout = False
 
         ##################################
         # server

@@ -9,6 +9,7 @@ from backend_util.src.errorcode import ErrorCode
 from backend_util.src.msg import Msg
 from backend_util.src import util
 
+
 class Process:
     def __init__(self, console_obj):
         self.console = console_obj
@@ -30,10 +31,16 @@ class Process:
         self.login_find_token_complete = False
         self.login_find_key_complete = False
 
+        # logout process
+        # self.console.event.register(EventConsole.key_logout, self.logout)
+
         self.logger.show(
             Logger.INFO,
             '初始化',
             '完成')
+
+    # def logout(self, _):
+    #     self.console.logout = True
 
     def run_login(self):
 
@@ -59,7 +66,7 @@ class Process:
         self.console.command.push(push_msg)
 
         while not self.login_ptt_login_complete and not self.break_login_process:
-            time.sleep(0.5)
+            time.sleep(0.1)
         if self.break_login_process:
             return
 
@@ -74,7 +81,7 @@ class Process:
         self.console.command.push(push_msg)
 
         while not self.login_find_token_complete and not self.break_login_process:
-            time.sleep(0.5)
+            time.sleep(0.1)
         if self.break_login_process:
             self.console.event.execute(EventConsole.key_logout)
             return
@@ -90,7 +97,7 @@ class Process:
         self.console.command.push(push_msg)
 
         while not self.login_find_key_complete and not self.break_login_process:
-            time.sleep(0.5)
+            time.sleep(0.1)
         if self.break_login_process:
             self.console.event.execute(EventConsole.key_logout)
             return
