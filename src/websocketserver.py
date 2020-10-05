@@ -145,7 +145,7 @@ class WsServer:
                 except websockets.exceptions.ConnectionClosedError:
                     self.logger.show(Logger.INFO, f'push to {role}', 'Fail', 'ConnectionClosedOK')
                     break
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
 
     async def producer_handler_to_server(self, ws, path):
 
@@ -160,7 +160,7 @@ class WsServer:
                 except websockets.exceptions.ConnectionClosedOK:
                     self.logger.show(Logger.INFO, 'push to frontend', 'Fail')
                     break
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
 
     async def handler(self, websocket, path=None):
         while self.run_session:
