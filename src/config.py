@@ -140,6 +140,12 @@ class Config:
             else:
                 self.logger.show(Logger.INFO, '系統設定檔', '設定檢查', '成功')
 
+            ptt_id = self.system_data.get_value(self.key_ptt_id)
+            self.logger.show(
+                Logger.INFO,
+                '使用帳號',
+                ptt_id)
+
         self.logger.show(
             Logger.INFO,
             '初始化',
