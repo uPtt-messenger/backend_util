@@ -75,7 +75,7 @@ class PTTAdapter:
 
         self.last_new_mail = 0
 
-    def event_logout(self, p):
+    def event_logout(self, _):
         self.recv_logout = True
 
     def event_close(self, p):
@@ -90,6 +90,7 @@ class PTTAdapter:
             '終止程序完成')
 
     def event_login(self, ptt_id, ptt_pw):
+        self.init_bot()
 
         self.console.process.run_login()
 
@@ -365,7 +366,7 @@ class PTTAdapter:
                 if not self.run_server:
                     break
 
-                if (self.ptt_id, self.ptt_pw) != (None, None):
+                if self.ptt_id and self.ptt_pw:
                     self.logger.show(
                         Logger.INFO,
                         '執行登入')
@@ -378,6 +379,11 @@ class PTTAdapter:
                             self.ptt_id,
                             self.ptt_pw,
                             kick_other_login=True)
+
+                        self.logger.show(
+                            Logger.INFO,
+                            '登入',
+                            '成功')
 
                         self.console.ptt_id = self.ptt_id
                         self.console.ptt_pw = self.ptt_pw
@@ -437,8 +443,7 @@ class PTTAdapter:
                         self.ptt_pw = None
                         continue
 
-                    if self.console.token is None:
-                        self._event_get_token(None)
+                    self._event_get_token(None)
 
                 if self.run_find_token_process:
                     self._event_get_token(None)
@@ -449,7 +454,8 @@ class PTTAdapter:
                     if self.recv_logout:
                         self.logger.show(
                             Logger.INFO,
-                            '執行登出')
+                            '執行登出',
+                            '啟動')
 
                         self.bot.logout()
 
@@ -461,6 +467,12 @@ class PTTAdapter:
                         self.console.command.push(res_msg)
 
                         self.init_bot()
+                        self.console.login_complete = False
+
+                        self.logger.show(
+                            Logger.INFO,
+                            '執行登出',
+                            '完成')
 
                     if self.send_waterball:
 
@@ -533,7 +545,7 @@ class PTTAdapter:
 
             try:
                 waterball_list = self.bot.get_waterball(PTT.data_type.waterball_operate_type.CLEAR)
-            except:
+            except PTT.exceptions.Requirelogin:
                 self.ptt_id = self.console.ptt_id
                 self.ptt_pw = self.console.ptt_pw
                 continue
