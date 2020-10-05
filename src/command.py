@@ -202,7 +202,7 @@ class Command:
                     msg='Update success')
                 self.console.command.push(res_msg)
             else:
-                self.console.command.push(recv_msg)
+                self.console.event.execute(EventConsole.key_get_token)
 
         elif opt == 'echo':
             current_res_msg = Msg(

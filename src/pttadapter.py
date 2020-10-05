@@ -50,7 +50,7 @@ class PTTAdapter:
         self.send_waterball_list = []
         self.send_waterball_complete = True
         self.send_waterball = False
-        self.find_token = False
+        self.run_find_token_process = False
 
         self.init_bot()
 
@@ -173,9 +173,9 @@ class PTTAdapter:
             msg='Success')
 
     def event_get_token(self, _):
-        self.find_token = True
+        self.run_find_token_process = True
 
-        while self.find_token:
+        while self.run_find_token_process:
             time.sleep(0.1)
 
     def _check_system_mail(self, mail_info, check_self):
@@ -440,6 +440,10 @@ class PTTAdapter:
                     if self.console.token is None:
                         self._event_get_token(None)
 
+                if self.run_find_token_process:
+                    self._event_get_token(None)
+                    self.run_find_token_process = False
+
                 if self.console.login_complete:
 
                     if self.recv_logout:
@@ -502,10 +506,6 @@ class PTTAdapter:
 
                         self.send_waterball_complete = True
                         self.send_waterball = False
-
-                    if self.find_token:
-                        self._event_get_token(None)
-                        self.find_token = False
 
                     # addfriend_id = self.command.addfriend()
                     # if addfriend_id is not None:
