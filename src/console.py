@@ -28,6 +28,8 @@ class Console:
         self.public_key = None
         self.private_key = None
         self.crypto = None
+        self.process = None
+        self.login_complete = False
 
         ##################################
         # server

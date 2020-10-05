@@ -145,7 +145,7 @@ class Command:
                     public_key)
 
                 current_time = int(time.time())
-                if abs(current_time - timestamp) > 2:
+                if abs(current_time - timestamp) > 5:
                     self.logger.show(
                         Logger.INFO,
                         'current_time',
@@ -233,7 +233,8 @@ class Command:
                         '登入程序中斷')
                     return
                 res_msg = current_res_msg
-            self.push(res_msg)
+            if res_msg:
+                self.push(res_msg)
 
             self.logger.show(
                 Logger.INFO,

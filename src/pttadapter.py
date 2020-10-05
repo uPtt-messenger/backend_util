@@ -43,7 +43,6 @@ class PTTAdapter:
         self.recv_logout = False
 
         self.run_server = True
-        self.login = False
 
         self.last_new_mail = 0
         self.res_msg = None
@@ -72,8 +71,6 @@ class PTTAdapter:
 
         self.recv_logout = False
 
-        self.login = False
-
         self.send_waterball_list = []
 
         self.last_new_mail = 0
@@ -94,13 +91,10 @@ class PTTAdapter:
 
     def event_login(self, ptt_id, ptt_pw):
 
+        self.console.process.run_login()
+
         self.ptt_id = ptt_id
         self.ptt_pw = ptt_pw
-
-        while self.ptt_id is not None:
-            time.sleep(self.console.config.quick_response_time)
-
-        return self.res_msg
 
     def event_send_waterball(self, parameter):
 
@@ -271,12 +265,9 @@ class PTTAdapter:
                     self.logger.show(Logger.INFO, 'token', token)
                     self.console.token = token
 
-                    push_msg = Msg(
-                        operate=Msg.key_notify,
-                        msg='get token success')
-
-                    self.console.command.push(push_msg)
+                    self.console.process.login_find_token_complete = True
             else:
+                self.console.process.login_find_token_complete = True
                 find_token = True
 
             if self.console.public_key is None or self.console.private_key is None:
@@ -298,8 +289,10 @@ class PTTAdapter:
                         Logger.INFO,
                         'private_key',
                         private_key)
+                    self.console.process.login_find_key_complete = True
             else:
                 find_key = True
+                self.console.process.login_find_key_complete = True
 
         if not find_token:
 
@@ -348,12 +341,6 @@ class PTTAdapter:
 
             self.console.server_command.push(push_msg)
 
-        if find_token and find_key:
-            self.ptt_id = None
-            self.ptt_pw = None
-
-            self.console.event.execute(EventConsole.key_login_success)
-
     def run(self):
 
         self.logger.show(
@@ -399,51 +386,61 @@ class PTTAdapter:
                         # self.dialogue = Dialogue(self.console)
                         # self.console.dialogue = self.dialogue
 
-                        self.login = True
                         self.bot.set_call_status(PTT.data_type.call_status.OFF)
                         self.bot.get_waterball(PTT.data_type.waterball_operate_type.CLEAR)
 
-                        self.res_msg = Msg(
-                            operate=Msg.key_login,
-                            code=ErrorCode.Success,
-                            msg='Login success')
+                        self.ptt_id = None
+                        self.ptt_pw = None
 
-                        if self.console.run_mode == 'dev':
-                            hash_id = util.sha256(self.ptt_id)
-                            if hash_id == 'c2c10daa1a61f1757019e995223ad346284e13462c62ee9dccac433445248899':
-                                token = util.sha256(f'{self.ptt_id} fixed token')
-                            else:
-                                token = util.generate_token()
-                        else:
-                            token = util.generate_token()
-
-                        self.console.login_token = token
-
-                        payload = Msg()
-                        payload.add(Msg.key_token, token)
-
-                        self.res_msg.add(Msg.key_payload, payload)
+                        self.console.process.login_ptt_login_complete = True
 
                     except PTT.exceptions.LoginError:
-                        self.res_msg = Msg(
+                        self.logger.show(
+                            Logger.INFO,
+                            'PTT.exceptions.LoginError')
+                        push_msg = Msg(
                             operate=Msg.key_login,
                             code=ErrorCode.LoginFail,
                             msg='Login fail')
+                        self.console.command.push(push_msg)
+
+                        self.console.process.break_login_process = True
+                        self.ptt_id = None
+                        self.ptt_pw = None
+                        continue
                     except PTT.exceptions.WrongIDorPassword:
-                        self.res_msg = Msg(
+                        self.logger.show(
+                            Logger.INFO,
+                            'PTT.exceptions.WrongIDorPassword')
+                        push_msg = Msg(
                             operate=Msg.key_login,
                             code=ErrorCode.LoginFail,
                             msg='ID or PW error')
+                        self.console.command.push(push_msg)
+
+                        self.console.process.break_login_process = True
+                        self.ptt_id = None
+                        self.ptt_pw = None
+                        continue
                     except PTT.exceptions.LoginTooOften:
-                        self.res_msg = Msg(
+                        self.logger.show(
+                            Logger.INFO,
+                            'PTT.exceptions.LoginTooOften')
+                        push_msg = Msg(
                             operate=Msg.key_login,
                             code=ErrorCode.LoginFail,
                             msg='Please wait a moment before login')
+                        self.console.command.push(push_msg)
+
+                        self.console.process.break_login_process = True
+                        self.ptt_id = None
+                        self.ptt_pw = None
+                        continue
 
                     if self.console.token is None:
                         self._event_get_token(None)
 
-                if self.login:
+                if self.console.login_complete:
 
                     if self.recv_logout:
                         self.logger.show(
@@ -526,7 +523,7 @@ class PTTAdapter:
                 time.sleep(self.console.config.quick_response_time)
                 end_time = time.time()
 
-            if not self.login:
+            if not self.console.login_complete:
                 continue
 
             # 慢速輪詢區
