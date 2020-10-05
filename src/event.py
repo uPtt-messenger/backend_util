@@ -57,8 +57,10 @@ class EventConsole:
                 self.logger.show(Logger.INFO, f'事件通知鏈 {event_chain_name}', '無事件')
             else:
                 self.logger.show(Logger.INFO, f'事件通知鏈 {event_chain_name}', '啟動')
-                for e in self.event_chain[event_chain_name]:
+                for i, e in enumerate(self.event_chain[event_chain_name]):
+                    self.logger.show(Logger.INFO, '事件', '啟動', f'{i + 1}/{len(self.event_chain[event_chain_name])}')
                     e(parameter)
+                    self.logger.show(Logger.INFO, '事件', '完成', f'{i + 1}/{len(self.event_chain[event_chain_name])}')
 
             self.logger.show(Logger.INFO, f'事件通知鏈 {event_chain_name}', '完成')
 
