@@ -132,8 +132,14 @@ class Process:
         # 為了 log 呈現上時序不會亂掉 sleep 一下
         time.sleep(0.01)
 
+        current_time = int(time.time())
+
+        hash_result = util.get_verify_hash(current_time, self.console.token, Msg.key_login_success)
+
         push_msg = Msg(operate=Msg.key_login_success)
         push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+        push_msg.add(Msg.key_timestamp, current_time)
+        push_msg.add(Msg.key_hash, hash_result)
         self.console.server_command.push(push_msg)
 
         self.logger.show(
