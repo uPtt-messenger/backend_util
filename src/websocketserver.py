@@ -249,12 +249,13 @@ class WsServer:
 
     def connect_setup(self):
 
-        # if self.console.run_mode == Console.run_mode_dev:
-        #     self.uri = f'ws://127.0.0.1:{self.console.config.server_port}'
-        # else:
-        #     self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
-
-        self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
+        if self.console.run_mode == Console.run_mode_dev:
+            if self.console.server_mode == Console.server_mode_local:
+                self.uri = f'ws://127.0.0.1:{self.console.config.server_port}'
+            else:
+                self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
+        else:
+            self.uri = f'ws://{self.console.dynamic_data.online_server}:{self.console.config.server_port}'
 
         self.logger.show(
             Logger.INFO,

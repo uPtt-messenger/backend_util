@@ -2,6 +2,9 @@ class Console:
     run_mode_dev = 'dev'
     run_mode_release = 'release'
 
+    server_mode_local = 'local'
+    server_mode_cloud = 'cloud'
+
     role_server = 'server'
     role_client = 'client'
 
@@ -10,6 +13,7 @@ class Console:
         # release
 
         self.run_mode = self.run_mode_dev
+        self.server_mode = self.server_mode_local
         self.config = None
         self.event = None
         self.role = None
