@@ -14,6 +14,13 @@ from backend_util.src.tag import Tag
 
 class Command:
     def __init__(self, console_obj, to_server: bool):
+
+        self.console = console_obj
+        self.logger = Logger('Command-' + ('Server' if to_server else 'Client'), self.console.config.log_level,
+                             handler=self.console.config.log_handler)
+
+        self.logger.show(Logger.INFO, '初始化', '啟動')
+
         self.login = False
         self.logout = False
 
@@ -29,12 +36,20 @@ class Command:
         self.parameter = None
         self.res_msg = None
 
-        self.console = console_obj
         self.to_server = to_server
         self.ptt_bot_lock = threading.Lock()
 
-        self.logger = Logger('Command-' + ('Server' if to_server else 'Client'), self.console.config.log_level,
-                             handler=self.console.config.log_handler)
+        self.server_api = [
+            Msg.key_get_token,
+            Msg.key_update_public_key,
+            Msg.key_login_success,
+            Msg.key_logout_success,
+        ]
+
+        self.logger.show(
+            Logger.INFO,
+            '初始化',
+            '完成')
 
     def check_token(self, msg):
         if msg is None:
@@ -139,6 +154,15 @@ class Command:
         opt = self.get_msg_value(recv_msg, Msg.key_opt)
         if opt is None:
             return
+
+        if self.console.role == Console.role_server:
+            if opt not in self.server_api:
+                res_msg = Msg(
+                    operate=opt,
+                    code=ErrorCode.ErrorParameter,
+                    msg=f'{opt} not in server api list')
+                self.console.command.push(res_msg)
+                return
 
         if opt == Msg.key_get_token:
 
@@ -281,25 +305,23 @@ class Command:
                     return
 
                 self.console.connect_list.set_value(ptt_id.lower(), None)
-                print(len(self.console.connect_list))
 
         elif opt == Msg.key_logout:
+            if not self.console.login_complete:
+                push_msg = Msg(
+                    operate=Msg.key_login,
+                    code=ErrorCode.Success,
+                    msg='已經登出')
+                self.console.command.push(push_msg)
+                return
 
-            if self.console.role == Console.role_server:
-                ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
-                if ptt_id is None:
-                    return
-
-                self.console.connect_list.set_value(ptt_id.lower(), None)
-                print(len(self.console.connect_list))
-            else:
-                self.logger.show(
-                    Logger.INFO,
-                    '執行登出程序')
-                self.console.event.execute(EventConsole.key_logout)
-                self.logger.show(
-                    Logger.INFO,
-                    '登出程序全數完成')
+            self.logger.show(
+                Logger.INFO,
+                '執行登出程序')
+            self.console.event.execute(EventConsole.key_logout)
+            self.logger.show(
+                Logger.INFO,
+                '登出程序全數完成')
 
         elif opt == Msg.key_close:
             self.logger.show(
