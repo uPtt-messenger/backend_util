@@ -3,7 +3,7 @@ import time
 
 from SingleLog.log import Logger
 
-from backend_util.src.msg import Msg
+from backend_util.src.console import Console
 from backend_util.src.event import EventConsole
 from backend_util.src.errorcode import ErrorCode
 from backend_util.src.msg import Msg
@@ -112,7 +112,7 @@ class Process:
             code=ErrorCode.Success,
             msg='Login success')
 
-        if self.console.run_mode == 'dev':
+        if self.console.run_mode == Console.run_mode_dev:
             hash_id = util.sha256(self.console.ptt_id)
             if hash_id == 'c2c10daa1a61f1757019e995223ad346284e13462c62ee9dccac433445248899':
                 token = util.sha256(f'{self.console.ptt_id} fixed token')

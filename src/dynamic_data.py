@@ -65,9 +65,9 @@ class DynamicData:
             Logger.INFO,
             '開始更新資料')
 
-        if self.console.run_mode == 'dev':
+        if self.console.run_mode == Console.run_mode_dev:
             update_url = 'https://raw.githubusercontent.com/PttCodingMan/uPtt/develop/data/open_data.json'
-        elif self.console.run_mode == 'release':
+        elif self.console.run_mode == Console.run_mode_release:
             update_url = 'https://raw.githubusercontent.com/PttCodingMan/uPtt/main/data/open_data.json'
         try:
             with urllib.request.urlopen(update_url) as url:
