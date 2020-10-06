@@ -28,6 +28,7 @@ class Config:
     key_ptt_pw = 'ptt_pw'
     key_token_index = 'token_mail_index'
     key_key_index = 'key_mail_index'
+    key_first = 'first'
 
     version = '0.0.1'
     quick_response_time = 0.05

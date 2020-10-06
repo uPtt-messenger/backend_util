@@ -209,7 +209,6 @@ class PTTAdapter:
             if self.console.config.token_start in mail_info.content and \
                     self.console.config.token_end in mail_info.content:
                 if self._check_system_mail(mail_info, False):
-
                     token = util.get_substring(
                         mail_info.content,
                         self.console.config.token_start,
@@ -232,7 +231,6 @@ class PTTAdapter:
                     self.console.config.key_private_end in mail_info.content:
 
                 if self._check_system_mail(mail_info, True):
-
                     private_key = util.get_substring(
                         mail_info.content,
                         self.console.config.key_private_start,
@@ -252,6 +250,14 @@ class PTTAdapter:
 
         token_index = self.console.config.get_value(Config.level_USER, Config.key_token_index)
         key_index = self.console.config.get_value(Config.level_USER, Config.key_key_index)
+
+        is_first_time = self.console.config.get_value(Config.level_USER, Config.key_first)
+
+        if is_first_time is None:
+            self.console.config.set_value(Config.level_USER, Config.key_first, True)
+            push_msg = Msg(operate=Msg.key_notify, code=ErrorCode.Success)
+            push_msg.add(Msg.key_msg, 'start first time progress bar')
+            self.console.command.push(push_msg)
 
         if self.console.token:
             self.console.process.login_find_token_complete = True
@@ -273,11 +279,7 @@ class PTTAdapter:
 
         if not self.console.token or not self.console.private_key:
             try:
-                mail_index = self.bot.get_newest_index(
-                    PTT.data_type.index_type.MAIL,
-                    # search_type=PTT.data_type.mail_search_type.KEYWORD,
-                    # search_condition=self.console.config.system_mail_key
-                )
+                mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
             except PTT.exceptions.NoSearchResult:
                 self.logger.show(
                     Logger.INFO,
@@ -652,7 +654,8 @@ class PTTAdapter:
             if new_mail > 0 and new_mail != self.last_new_mail:
                 self.last_new_mail = new_mail
                 push_msg = Msg(
-                    operate=Msg.key_notify)
+                    operate=Msg.key_notify,
+                    code=ErrorCode.Success)
                 push_msg.add(Msg.key_msg, f'You have {new_mail} mails')
 
                 self.console.command.push(push_msg)
