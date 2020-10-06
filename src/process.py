@@ -32,15 +32,24 @@ class Process:
         self.login_find_key_complete = False
 
         # logout process
-        # self.console.event.register(EventConsole.key_logout, self.logout)
+        self.console.event.register(EventConsole.key_logout, self.logout)
 
         self.logger.show(
             Logger.INFO,
             '初始化',
             '完成')
 
-    # def logout(self, _):
-    #     self.console.logout = True
+    def logout(self, _):
+
+        current_time = int(time.time())
+
+        hash_result = util.get_verify_hash(current_time, self.console.token, Msg.key_logout)
+
+        push_msg = Msg(operate=Msg.key_logout)
+        push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+        push_msg.add(Msg.key_timestamp, current_time)
+        push_msg.add(Msg.key_hash, hash_result)
+        self.console.server_command.push(push_msg)
 
     def run_login(self):
 

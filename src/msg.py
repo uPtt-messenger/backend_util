@@ -38,7 +38,8 @@ class Msg:
 
     key_get_token = 'server_get_token'
     key_update_public_key = 'server_update_pub_key'
-    key_login_success = 'login_success'
+    key_login_success = 'server_login_success'
+    key_logout_success = 'server_logout'
 
     def __init__(self, operate=None, code=None, msg=None, strobj=None, dictobj=None):
 
