@@ -35,6 +35,7 @@ class Config:
     query_cycle = 3.0 + quick_response_time
     update_cycle = 180
     port = 50732
+    verify_time_threshold = 5
 
     log_level = Logger.INFO
     log_handler = None

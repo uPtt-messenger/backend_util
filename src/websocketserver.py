@@ -1,15 +1,17 @@
 import asyncio
 import websockets
-import traceback
 import time
 import threading
 import json
 
 from SingleLog.log import Logger
 
-from .msg import Msg
-from .console import Console
-from .event import EventConsole
+from backend_util.src.msg import Msg
+from backend_util.src.console import Console
+from backend_util.src.config import Config
+from backend_util.src.event import EventConsole
+from backend_util.src.errorcode import ErrorCode
+from backend_util.src import util
 
 
 class WsServer:
@@ -82,10 +84,10 @@ class WsServer:
                     Logger.INFO,
                     '收到字串',
                     recv_msg_str)
-                self.logger.show(
-                    Logger.INFO,
-                    '路徑',
-                    path)
+                # self.logger.show(
+                #     Logger.INFO,
+                #     '路徑',
+                #     path)
 
                 try:
                     recv_msg = Msg(strobj=recv_msg_str)
@@ -109,19 +111,9 @@ class WsServer:
                         recv_msg.add(Msg.key_token, token)
 
                 if self.to_server:
-                    self.console.server_command.analyze(recv_msg)
+                    self.console.server_command.analyze(recv_msg, ws)
                 else:
-                    opt = self.console.command.get_msg_value(recv_msg, Msg.key_opt)
-                    if opt == Msg.key_login_success:
-                        # 唯一一個需要在 websocket server 實作的 api
-                        current_ptt_id = self.console.command.get_msg_value(recv_msg, Msg.key_ptt_id)
-                        if current_ptt_id is None:
-                            return
-
-                        self.logger.show(Logger.INFO, 'ptt_id', current_ptt_id)
-
-                    else:
-                        self.console.command.analyze(recv_msg)
+                    self.console.command.analyze(recv_msg, ws)
             except Exception as e:
                 # traceback.print_tb(e.__traceback__)
                 self.run_session = False

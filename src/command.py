@@ -63,7 +63,7 @@ class Command:
             return None
         return value
 
-    def analyze(self, recv_msg: Msg):
+    def analyze(self, recv_msg: Msg, ws):
 
         opt = self.get_msg_value(recv_msg, Msg.key_opt)
         if opt is None:
@@ -145,7 +145,7 @@ class Command:
                     public_key)
 
                 current_time = int(time.time())
-                if abs(current_time - timestamp) > 5:
+                if abs(current_time - timestamp) > Config.verify_time_threshold:
                     self.logger.show(
                         Logger.INFO,
                         'current_time',
@@ -203,6 +203,71 @@ class Command:
                 self.console.command.push(res_msg)
             else:
                 self.console.event.execute(EventConsole.key_get_token)
+
+        elif opt == Msg.key_login_success:
+            ptt_id = self.console.command.get_msg_value(recv_msg, Msg.key_ptt_id)
+            if ptt_id is None:
+                return
+            timestamp = self.console.command.get_msg_value(recv_msg, Msg.key_timestamp)
+            if timestamp is None:
+                return
+            hash_value = self.console.command.get_msg_value(recv_msg, Msg.key_hash)
+            if hash_value is None:
+                return
+            self.logger.show(Logger.INFO, 'ptt_id', ptt_id)
+            self.logger.show(Logger.INFO, 'timestamp', timestamp)
+            self.logger.show(Logger.INFO, 'hash', hash_value)
+
+            current_time = int(time.time())
+
+            if abs(current_time - timestamp) > Config.verify_time_threshold:
+                self.logger.show(
+                    Logger.INFO,
+                    'current_time',
+                    current_time)
+
+                self.logger.show(
+                    Logger.INFO,
+                    'timestamp',
+                    timestamp)
+
+                res_msg = Msg(
+                    operate=opt,
+                    code=ErrorCode.ErrorParameter,
+                    msg=f'Please check time')
+                self.console.command.push(res_msg)
+                return
+            self.logger.show(
+                Logger.INFO,
+                '時間驗證',
+                '成功')
+            current_token = self.console.token_list.get_value(ptt_id.lower())
+            if current_token is None:
+                res_msg = Msg(
+                    operate=opt,
+                    code=ErrorCode.ErrorParameter,
+                    msg=f'Please require token first')
+                self.console.command.push(res_msg)
+                return
+            self.logger.show(
+                Logger.INFO,
+                '取得 Token',
+                '成功')
+            hash_result = util.get_verify_hash(timestamp, current_token, Msg.key_login_success)
+
+            if hash_result != hash_value:
+                res_msg = Msg(
+                    operate=opt,
+                    code=ErrorCode.ErrorParameter,
+                    msg=f'Verify fail')
+                self.console.command.push(res_msg)
+                return
+            self.logger.show(
+                Logger.INFO,
+                '雜湊值驗證',
+                '成功')
+
+            self.console.connect_list.set_value(ptt_id.lower(), ws)
 
         elif opt == 'echo':
             current_res_msg = Msg(
