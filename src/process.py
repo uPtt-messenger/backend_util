@@ -62,7 +62,8 @@ class Process:
 
         push_msg = Msg(
             operate=Msg.key_notify,
-            msg='PTT 登入流程啟動')
+            code=ErrorCode.Success,
+            msg='uPtt 登入流程啟動')
         self.console.command.push(push_msg)
 
         while not self.login_ptt_login_complete and not self.break_login_process:
@@ -72,11 +73,13 @@ class Process:
 
         push_msg = Msg(
             operate=Msg.key_notify,
+            code=ErrorCode.Success,
             msg='PTT 登入流程成功')
         self.console.command.push(push_msg)
 
         push_msg = Msg(
             operate=Msg.key_notify,
+            code=ErrorCode.Success,
             msg='取得 uPtt 權杖流程啟動')
         self.console.command.push(push_msg)
 
@@ -88,11 +91,13 @@ class Process:
 
         push_msg = Msg(
             operate=Msg.key_notify,
+            code=ErrorCode.Success,
             msg='取得 uPtt 權杖流程成功')
         self.console.command.push(push_msg)
 
         push_msg = Msg(
             operate=Msg.key_notify,
+            code=ErrorCode.Success,
             msg='加密流程啟動')
         self.console.command.push(push_msg)
 
@@ -104,6 +109,7 @@ class Process:
 
         push_msg = Msg(
             operate=Msg.key_notify,
+            code=ErrorCode.Success,
             msg='加密流程成功')
         self.console.command.push(push_msg)
 
