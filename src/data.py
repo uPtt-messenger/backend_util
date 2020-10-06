@@ -60,13 +60,15 @@ class DictData:
 
     def get_value(self, key):
 
+        key = str(key)
+
         if key not in self.data:
             return None
         return self.data[key]
 
     def _set_value_func(self, key, value):
 
-        # self.logger.show(Logger.INFO, '更新資料', '啟動')
+        key = str(key)
 
         value_change = False
         if value is not None:
@@ -94,6 +96,7 @@ class DictData:
 
     def set_value(self, key, value):
 
+        key = str(key)
         value_change = self._set_value_func(key, value)
         if value_change and self.save_path:
             self.save()
