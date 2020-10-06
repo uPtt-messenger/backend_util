@@ -19,13 +19,15 @@ class Config:
 
     app_name = 'uPtt'
 
-    config_file_name = 'config.json'
-    system_config_file_name = 'system_config.json'
+    config_file_name = 'config'
+    system_config_file_name = 'system_config'
     friend_file_name = 'friend.txt'
 
     key_version = 'version'
     key_ptt_id = 'ptt_id'
     key_ptt_pw = 'ptt_pw'
+    key_token_index = 'token_mail_index'
+    key_key_index = 'key_mail_index'
 
     version = '0.0.1'
     quick_response_time = 0.05
@@ -161,7 +163,7 @@ class Config:
 
         self.system_data = DictData(
             self.console,
-            'system_config',
+            self.system_config_file_name,
             self.user_config_path)
         if not self.system_data.load():
             # 載入系統預設資料
@@ -169,10 +171,10 @@ class Config:
 
         self.user_data = DictData(
             self.console,
-            'config',
+            self.config_file_name,
             self.user_config_path)
         if not self.user_data.load():
-            # init user config
+            # 載入使用者預設資料
             self.user_data.set_value(self.key_ptt_id, self.id)
 
     def check_value(self, level, key, value, default_value):

@@ -6,6 +6,7 @@ from PyPtt import PTT
 from SingleLog.log import Logger
 
 from backend_util.src.console import Console
+from backend_util.src.config import Config
 from backend_util.src.errorcode import ErrorCode
 from backend_util.src.msg import Msg
 from backend_util.src import util
@@ -199,64 +200,15 @@ class PTTAdapter:
 
         return True
 
-    def _event_get_token(self, _):
-        self.logger.show(
-            Logger.INFO,
-            '搜尋 Token and key')
+    def _parse_token(self, mail_info, i):
 
-        try:
-            mail_index = self.bot.get_newest_index(
-                PTT.data_type.index_type.MAIL,
-                # search_type=PTT.data_type.mail_search_type.KEYWORD,
-                # search_condition=self.console.config.system_mail_key
-            )
-        except PTT.exceptions.NoSearchResult:
-            self.logger.show(
-                Logger.INFO,
-                '無搜尋結果，準備請求 token')
-
-            push_msg = Msg(operate=Msg.key_get_token)
-            push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
-            self.console.server_command.push(push_msg)
+        if not mail_info:
             return
 
-        self.logger.show(
-            Logger.INFO,
-            '最新信件編號',
-            mail_index)
-
-        find_token = False
-        find_key = False
-        for i in reversed(range(1, mail_index + 1)):
-            self.logger.show(
-                Logger.INFO,
-                '檢查信件編號',
-                i)
-
-            mail_info = self.bot.get_mail(
-                i,
-                # search_type=PTT.data_type.mail_search_type.KEYWORD,
-                # search_condition=self.console.config.system_mail_key
-            )
-            if mail_info.title is None:
-                continue
-            if mail_info.author is None:
-                continue
-            if mail_info.content is None:
-                continue
-
-            if self.console.config.system_mail_title != mail_info.title:
-                continue
-
-            if self.console.token is None:
-                if self.console.config.token_start in mail_info.content and \
-                        self.console.config.token_end in mail_info.content:
-
-                    if not self._check_system_mail(mail_info, False):
-                        continue
-
-                    find_token = True
-                    self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+        if self.console.token is None:
+            if self.console.config.token_start in mail_info.content and \
+                    self.console.config.token_end in mail_info.content:
+                if self._check_system_mail(mail_info, False):
 
                     token = util.get_substring(
                         mail_info.content,
@@ -266,20 +218,20 @@ class PTTAdapter:
                     self.logger.show(Logger.INFO, 'token', token)
                     self.console.token = token
 
+                    self.console.config.set_value(Config.level_USER, Config.key_token_index, i)
+
                     self.console.process.login_find_token_complete = True
-            else:
-                self.console.process.login_find_token_complete = True
-                find_token = True
 
-            if self.console.public_key is None or self.console.private_key is None:
-                if self.console.config.key_private_start in mail_info.content and \
-                        self.console.config.key_private_end in mail_info.content:
+    def _parse_key(self, mail_info, i):
 
-                    if not self._check_system_mail(mail_info, True):
-                        continue
+        if not mail_info:
+            return
 
-                    find_key = True
-                    self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+        if self.console.public_key is None or self.console.private_key is None:
+            if self.console.config.key_private_start in mail_info.content and \
+                    self.console.config.key_private_end in mail_info.content:
+
+                if self._check_system_mail(mail_info, True):
 
                     private_key = util.get_substring(
                         mail_info.content,
@@ -290,12 +242,84 @@ class PTTAdapter:
                         Logger.INFO,
                         'private_key',
                         private_key)
-                    self.console.process.login_find_key_complete = True
-            else:
-                find_key = True
-                self.console.process.login_find_key_complete = True
 
-        if not find_token:
+                    self.console.private_key = private_key
+
+                    self.console.config.set_value(Config.level_USER, Config.key_key_index, i)
+                    self.console.process.login_find_key_complete = True
+
+    def _event_get_token(self, _):
+
+        token_index = self.console.config.get_value(Config.level_USER, Config.key_token_index)
+        key_index = self.console.config.get_value(Config.level_USER, Config.key_key_index)
+
+        if self.console.token:
+            self.console.process.login_find_token_complete = True
+        elif token_index:
+            try:
+                mail_info = self.bot.get_mail(token_index)
+                self._parse_token(mail_info, token_index)
+            except ValueError:
+                self.console.config.set_value(Config.level_USER, Config.key_token_index, None)
+
+        if self.console.private_key:
+            self.console.process.login_find_key_complete = True
+        elif key_index:
+            try:
+                mail_info = self.bot.get_mail(key_index)
+                self._parse_key(mail_info, key_index)
+            except ValueError:
+                self.console.config.set_value(Config.level_USER, Config.key_key_index, None)
+
+        if not self.console.token or not self.console.private_key:
+            try:
+                mail_index = self.bot.get_newest_index(
+                    PTT.data_type.index_type.MAIL,
+                    # search_type=PTT.data_type.mail_search_type.KEYWORD,
+                    # search_condition=self.console.config.system_mail_key
+                )
+            except PTT.exceptions.NoSearchResult:
+                self.logger.show(
+                    Logger.INFO,
+                    '無搜尋結果，準備請求 token')
+
+                push_msg = Msg(operate=Msg.key_get_token)
+                push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+                self.console.server_command.push(push_msg)
+                return
+
+            self.logger.show(
+                Logger.INFO,
+                '最新信件編號',
+                mail_index)
+
+            for i in reversed(range(1, mail_index + 1)):
+
+                if self.console.token and self.console.private_key:
+                    break
+
+                self.logger.show(
+                    Logger.INFO,
+                    '檢查信件編號',
+                    i)
+
+                mail_info = self.bot.get_mail(i)
+                if mail_info.title is None:
+                    continue
+                if mail_info.author is None:
+                    continue
+                if mail_info.content is None:
+                    continue
+
+                if self.console.config.system_mail_title != mail_info.title:
+                    continue
+
+                self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+
+                self._parse_token(mail_info, i)
+                self._parse_key(mail_info, i)
+
+        if not self.console.token:
 
             self.logger.show(
                 Logger.INFO,
@@ -305,7 +329,7 @@ class PTTAdapter:
             push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
             self.console.server_command.push(push_msg)
 
-        elif not find_key:
+        elif not self.console.private_key:
             self.logger.show(
                 Logger.INFO,
                 '產生金鑰')
