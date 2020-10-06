@@ -28,6 +28,9 @@ class DictData:
             '初始化',
             '完成')
 
+    def __len__(self):
+        return len(self.data)
+
     def load(self):
 
         data_file = f'{self.save_path}/{self.data_name}.json'
