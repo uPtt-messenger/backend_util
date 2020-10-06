@@ -33,6 +33,7 @@ class Process:
 
         # logout process
         self.console.event.register(EventConsole.key_logout, self.logout)
+        self.console.event.register(EventConsole.key_close, self.logout)
 
         self.logger.show(
             Logger.INFO,
@@ -45,7 +46,7 @@ class Process:
 
         hash_result = util.get_verify_hash(current_time, self.console.token, Msg.key_logout)
 
-        push_msg = Msg(operate=Msg.key_logout)
+        push_msg = Msg(operate=Msg.key_logout_success)
         push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
         push_msg.add(Msg.key_timestamp, current_time)
         push_msg.add(Msg.key_hash, hash_result)
