@@ -33,6 +33,7 @@ class Msg:
     key_api_version = 'api_version'
     key_hash = 'hash'
     key_public_key = 'pub_key'
+    key_error_code = 'errorcode'
 
     # server
 
@@ -40,6 +41,7 @@ class Msg:
     key_update_public_key = 'server_update_pub_key'
     key_login_success = 'server_login_success'
     key_logout_success = 'server_logout'
+    key_get_public_key = 'server_get_pub_key'
 
     def __init__(self, operate=None, code=None, msg=None, strobj=None, dictobj=None):
 

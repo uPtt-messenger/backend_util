@@ -166,7 +166,46 @@ class Command:
                 self.console.command.push(res_msg)
                 return
 
-        if opt == Msg.key_get_token:
+        if opt == Msg.key_get_public_key:
+            if self.console.role == Console.role_server:
+                ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
+                if ptt_id is None:
+                    return
+                self.logger.show(Logger.INFO, 'ptt_id', ptt_id)
+
+                if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_get_public_key):
+                    return
+
+                public_key = self.console.public_key_list.get_value(ptt_id.lower())
+                if not public_key:
+                    res_msg = Msg(
+                        operate=opt,
+                        code=ErrorCode.NoSuchUser,
+                        msg=f'{ptt_id} is not using uPtt')
+                else:
+                    res_msg = Msg(
+                        operate=opt,
+                        code=ErrorCode.Success)
+                    res_msg.add(Msg.key_public_key, public_key)
+                self.console.command.push(res_msg)
+
+            else:
+                error_code = self.get_msg_value(recv_msg, Msg.key_error_code)
+                if error_code is None:
+                    return
+                if error_code != ErrorCode.Success:
+                    self.console.command.push(recv_msg)
+                    return
+                ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
+                if ptt_id is None:
+                    return
+                public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
+                if not public_key:
+                    return
+                self.logger.show(Logger.INFO, 'target id', ptt_id)
+                self.logger.show(Logger.INFO, 'public_key', public_key)
+
+        elif opt == Msg.key_get_token:
 
             if self.console.role == Console.role_server:
 
@@ -263,13 +302,6 @@ class Command:
                 self.console.record.set_value('max_online_time', str(date_time))
 
             self.max_online_lock.release()
-
-        elif opt == 'echo':
-            current_res_msg = Msg(
-                operate=opt,
-                code=ErrorCode.Success,
-                msg=recv_msg.get(Msg.key_msg))
-            self.push(current_res_msg)
 
         elif opt == Msg.key_login:
 
