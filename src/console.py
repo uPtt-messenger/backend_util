@@ -45,4 +45,4 @@ class Console:
         self.server_command = None
         self.connect_list = None
         self.connect_time = None
-        self.record = None
+        self.max_online = None
