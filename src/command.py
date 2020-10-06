@@ -1,5 +1,6 @@
 import time
 import threading
+from datetime import datetime
 
 from SingleLog.log import Logger
 
@@ -38,6 +39,7 @@ class Command:
 
         self.to_server = to_server
         self.ptt_bot_lock = threading.Lock()
+        self.max_online_lock = threading.Lock()
 
         self.server_api = [
             Msg.key_get_token,
@@ -242,11 +244,25 @@ class Command:
                 return
             self.logger.show(Logger.INFO, 'ptt_id', ptt_id)
 
+            timestamp = self.get_msg_value(recv_msg, Msg.key_timestamp)
+            if timestamp is None:
+                return
+
             if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success):
                 return
 
             self.console.connect_list.set_value(ptt_id.lower(), ws)
-            print(len(self.console.connect_list))
+            self.console.connect_time.set_value(ptt_id.lower(), timestamp)
+
+            self.max_online_lock.acquire()
+
+            max_online = self.console.record.get_value('max_online')
+            if not max_online or len(self.console.connect_list) > max_online:
+                date_time = datetime.fromtimestamp(timestamp)
+                self.console.record.set_value('max_online', len(self.console.connect_list))
+                self.console.record.set_value('max_online_time', str(date_time))
+
+            self.max_online_lock.release()
 
         elif opt == 'echo':
             current_res_msg = Msg(
@@ -305,6 +321,7 @@ class Command:
                     return
 
                 self.console.connect_list.set_value(ptt_id.lower(), None)
+                self.console.connect_time.set_value(ptt_id.lower(), None)
 
         elif opt == Msg.key_logout:
             if not self.console.login_complete:
@@ -349,8 +366,6 @@ class Command:
             self.logger.show(
                 Logger.INFO,
                 '執行丟水球程序')
-            # for e in self.console.event.send_waterball:
-            #     e(waterball_id, waterball_content)
             self.console.event.execute(EventConsole.key_send_waterball, parameter=(waterball_id, waterball_content))
             self.logger.show(
                 Logger.INFO,

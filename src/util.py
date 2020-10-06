@@ -71,9 +71,12 @@ def get_verify_hash(a, b, c=None):
 
 if __name__ == '__main__':
     import time
-    import datetime
+    from datetime import datetime
 
-    import pytz
+    timestamp = int(time.time())
+    date_time = datetime.fromtimestamp(timestamp)
 
-    us = pytz.timezone('US/Pacific')
-    dt = datetime.datetime.strptime('2015-07-03 20:25', '%Y-%m-%d %H:%M').replace(tzinfo=us)
+    print("Date time object:", date_time)
+
+    d = date_time.strftime("%m/%d/%Y, %H:%M:%S")
+    print("Output 2:", d)

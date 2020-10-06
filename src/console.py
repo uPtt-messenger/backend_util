@@ -44,3 +44,5 @@ class Console:
         self.ws_server = None
         self.server_command = None
         self.connect_list = None
+        self.connect_time = None
+        self.record = None
