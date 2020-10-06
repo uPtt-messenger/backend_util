@@ -102,8 +102,8 @@ class Config:
 
         else:
             # server
-            self.config_path = '.'
-            self.system_config_path = '.'
+            self.config_path = '../server_data'
+            self.system_config_path = '../server_data'
 
             self.system_data = DictData(
                 self.console,
