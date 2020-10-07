@@ -77,16 +77,6 @@ class Command:
         if hash_value is None:
             return False
 
-        self.logger.show(
-            Logger.INFO,
-            'timestamp',
-            timestamp)
-
-        self.logger.show(
-            Logger.INFO,
-            'hash_value',
-            hash_value)
-
         current_time = int(time.time())
         if abs(current_time - timestamp) > Config.verify_time_threshold:
             self.logger.show(
@@ -99,43 +89,44 @@ class Command:
                 'timestamp',
                 timestamp)
 
+            self.logger.show(
+                Logger.INFO,
+                '時間驗證',
+                '失敗')
+
             res_msg = Msg(
                 operate=opt,
                 code=ErrorCode.ErrorParameter,
                 msg=f'Please check time')
             self.console.command.push(res_msg)
             return False
-        self.logger.show(
-            Logger.INFO,
-            '時間驗證',
-            '成功')
 
         current_token = self.console.token_list.get_value(ptt_id.lower())
         if current_token is None:
+            self.logger.show(
+                Logger.INFO,
+                '取得 Token',
+                '失敗')
             res_msg = Msg(
                 operate=opt,
                 code=ErrorCode.ErrorParameter,
                 msg=f'Please require token first')
             self.console.command.push(res_msg)
             return False
-        self.logger.show(
-            Logger.INFO,
-            '取得 Token',
-            '成功')
 
         current_hash = util.get_verify_hash(timestamp, current_token, key_value)
 
         if current_hash != hash_value:
+            self.logger.show(
+                Logger.INFO,
+                '雜湊值驗證',
+                '失敗')
             res_msg = Msg(
                 operate=opt,
                 code=ErrorCode.ErrorParameter,
                 msg=f'Verify fail')
             self.console.command.push(res_msg)
             return False
-        self.logger.show(
-            Logger.INFO,
-            '雜湊值驗證',
-            '成功')
 
         return True
 
