@@ -24,7 +24,6 @@ class DictData:
 
         if self.save_path is not None:
             util.mkdir(self.save_path)
-            self.load()
 
         self.logger.show(
             Logger.INFO,
