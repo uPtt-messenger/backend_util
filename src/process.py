@@ -35,7 +35,7 @@ class Process:
         # logout process
         self.console.event.register(EventConsole.key_logout, self.logout)
         self.console.event.register(EventConsole.key_close, self.logout)
-        
+
         if self.console.role == Console.role_server:
             t = threading.Thread(target=self.check_online)
             t.daemon = True
@@ -53,6 +53,8 @@ class Process:
         self.login_ptt_login_complete = False
         self.login_find_token_complete = False
         self.login_find_key_complete = False
+
+        self.console.login_complete = False
 
         current_time = int(time.time())
 
@@ -182,10 +184,17 @@ class Process:
         self.logger.show(Logger.INFO, '心跳核心', '初始化', '完成')
 
         while self.console.login_complete:
-
             time.sleep(Config.heartbeat_time)
 
             current_time = int(time.time())
+            while self.console.login_complete and current_time <= self.console.last_send_time + Config.heartbeat_time:
+                time.sleep(0.5)
+                current_time = int(time.time())
+
+            if not self.console.login_complete:
+                break
+
+            self.console.last_send_time = current_time
 
             hash_result = util.get_verify_hash(current_time, self.console.token, Msg.key_heartbeat)
 
@@ -195,6 +204,7 @@ class Process:
             push_msg.add(Msg.key_hash, hash_result)
             self.console.server_command.push(push_msg)
 
+        self.logger.show(Logger.INFO, '心跳核心', '結束')
 
     def check_online(self):
 
@@ -207,8 +217,6 @@ class Process:
             time.sleep(check_time)
 
             current_time = int(time.time())
-
-            self.logger.show(Logger.INFO, '修正線上人數', '啟動')
 
             self.console.command.max_online_lock.acquire()
 
@@ -226,8 +234,6 @@ class Process:
                 self.logger.show(Logger.INFO, '剔除使用者', ptt_id, '完成')
 
             self.console.command.max_online_lock.release()
-
-            self.logger.show(Logger.INFO, '修正線上人數', '完成')
 
 
 if __name__ == '__main__':
