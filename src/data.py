@@ -91,11 +91,14 @@ class DictData:
 
         if value_change:
             if key not in self.data:
-                self.logger.show(Logger.INFO, '已經更新資料為', key, None)
+                self.logger.show(Logger.INFO, '已經清空資料', key)
             else:
-                self.logger.show(Logger.INFO, '已經更新資料為', key, self.data[key])
+                if isinstance(self.data[key], str) or isinstance(self.data[key], int):
+                    self.logger.show(Logger.INFO, '已經更新資料', key, self.data[key])
+                else:
+                    self.logger.show(Logger.INFO, '已經更新資料', key)
         else:
-            self.logger.show(Logger.INFO, '已經更新資料為', key, '沒有更動')
+            self.logger.show(Logger.INFO, '資料沒有更動', key, '沒有更動')
 
         return value_change
 
