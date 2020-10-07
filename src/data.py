@@ -6,7 +6,7 @@ from backend_util.src import util
 
 
 class DictData:
-    def __init__(self, console_obj, data_name, save_path):
+    def __init__(self, console_obj, data_name, save_path=None):
 
         self.console = console_obj
         self.logger = Logger(f'Data-{data_name}', config.log_level, handler=config.log_handler)
@@ -18,10 +18,13 @@ class DictData:
 
         save_path = util.clean_path(save_path)
         self.save_path = save_path
-        if self.save_path is not None:
-            util.mkdir(self.save_path)
+
         self.data_name = data_name
         self.data = dict()
+
+        if self.save_path is not None:
+            util.mkdir(self.save_path)
+            self.load()
 
         self.logger.show(
             Logger.INFO,
@@ -32,6 +35,9 @@ class DictData:
         return len(self.data)
 
     def load(self):
+
+        if not self.save_path:
+            return False
 
         data_file = f'{self.save_path}/{self.data_name}.json'
 
@@ -104,9 +110,14 @@ class DictData:
 
 
 if __name__ == '__main__':
-    path = 'D:/git/uPtt/server/src'
+    pass
+    # from backend_util.src.console import Console
+    # from backend_util.src.config import Config
+    #
+    # console_obj = Console()
+    # console_obj.role = Console.role_client
+    #
+    # config_obj = Config(console_obj)
+    # console_obj.config = config_obj
 
-    path = path.replace('\\', '/')
-    for i in range(1, len(path.split('/'))):
-        current_path = '/'.join(path.split('/')[:i + 1])
-        print(current_path)
+
