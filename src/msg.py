@@ -42,6 +42,7 @@ class Msg:
     key_login_success = 'server_login_success'
     key_logout_success = 'server_logout'
     key_get_public_key = 'server_get_pub_key'
+    key_heartbeat = 'server_heartbeat'
 
     def __init__(self, operate=None, code=None, msg=None, strobj=None, dictobj=None):
 

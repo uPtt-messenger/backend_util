@@ -46,6 +46,7 @@ class Command:
             Msg.key_update_public_key,
             Msg.key_login_success,
             Msg.key_logout_success,
+            Msg.key_heartbeat
         ]
 
         self.logger.show(
@@ -277,7 +278,7 @@ class Command:
             else:
                 self.console.event.execute(EventConsole.key_get_token)
 
-        elif opt == Msg.key_login_success:
+        elif opt == Msg.key_login_success or opt == Msg.key_heartbeat:
             if self.console.role == Console.role_server:
                 ptt_id = self.console.command.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
@@ -288,8 +289,12 @@ class Command:
                 if timestamp is None:
                     return
 
-                if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success):
-                    return
+                if opt == Msg.key_login_success:
+                    if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success):
+                        return
+                else:
+                    if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_heartbeat):
+                        return
 
                 self.max_online_lock.acquire()
 
