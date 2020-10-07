@@ -34,7 +34,7 @@ class Console:
         self.crypto = None
         self.process = None
         self.login_complete = False
-        # self.logout = False
+        self.last_send_time = 0
 
         ##################################
         # server
