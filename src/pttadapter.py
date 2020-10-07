@@ -493,7 +493,6 @@ class PTTAdapter:
                         self.console.command.push(res_msg)
 
                         self.init_bot()
-                        self.console.login_complete = False
 
                         self.logger.show(
                             Logger.INFO,
