@@ -199,7 +199,7 @@ class Process:
     def check_online(self):
 
         self.logger.show(Logger.INFO, '修正線上人數核心', '初始化', '啟動')
-        check_time = int(Config.heartbeat_time * 1.2)
+        check_time = int(Config.heartbeat_time * 1.1)
         self.logger.show(Logger.INFO, '修正線上人數核心', '修正間隔時間', check_time)
         self.logger.show(Logger.INFO, '修正線上人數核心', '初始化', '完成')
 

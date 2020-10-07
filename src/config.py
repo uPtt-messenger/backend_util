@@ -37,7 +37,7 @@ class Config:
     port = 50732
     verify_time_threshold = 5
 
-    heartbeat_time = 30
+    heartbeat_time = 120
 
     log_level = Logger.INFO
     log_handler = None
