@@ -291,10 +291,10 @@ class Command:
                 if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success):
                     return
 
+                self.max_online_lock.acquire()
+
                 self.console.connect_list.set_value(ptt_id.lower(), ws)
                 self.console.connect_time.set_value(ptt_id.lower(), timestamp)
-
-                self.max_online_lock.acquire()
 
                 current_online = len(self.console.connect_list)
                 current_time = self.console.max_online.get_value(current_online)
@@ -355,8 +355,12 @@ class Command:
                 if ptt_id is None:
                     return
 
+                self.max_online_lock.acquire()
+
                 self.console.connect_list.set_value(ptt_id.lower(), None)
                 self.console.connect_time.set_value(ptt_id.lower(), None)
+
+                self.max_online_lock.release()
 
         elif opt == Msg.key_logout:
             if not self.console.login_complete:
