@@ -174,7 +174,7 @@ class PTTAdapter:
             code=ErrorCode.Success,
             msg='Success')
 
-    def event_get_token(self, _):
+    def event_get_token(self, p):
         self.run_find_token_process = True
 
         while self.run_find_token_process:
@@ -236,17 +236,24 @@ class PTTAdapter:
                         self.console.config.key_private_start,
                         self.console.config.key_private_end)
 
-                    self.logger.show(
-                        Logger.INFO,
-                        'private_key',
-                        private_key)
+                    private_key = f'-----BEGIN PRIVATE KEY-----\n{private_key}\n-----END PRIVATE KEY-----'
+
+                    self.console.crypto.import_key(private_key)
+                    public_key, private_key = self.console.crypto.export_key()
 
                     self.console.private_key = private_key
+                    self.console.public_key = public_key
 
                     self.console.config.set_value(Config.level_USER, Config.key_key_index, i)
                     self.console.process.login_find_key_complete = True
 
     def _event_get_token(self, _):
+
+        def send_first_time_msg():
+            self.console.config.set_value(Config.level_USER, Config.key_first, True)
+            push_msg = Msg(operate=Msg.key_notify, code=ErrorCode.Success)
+            push_msg.add(Msg.key_msg, 'start first time progress bar')
+            self.console.command.push(push_msg)
 
         token_index = self.console.config.get_value(Config.level_USER, Config.key_token_index)
         key_index = self.console.config.get_value(Config.level_USER, Config.key_key_index)
@@ -254,10 +261,7 @@ class PTTAdapter:
         is_first_time = self.console.config.get_value(Config.level_USER, Config.key_first)
 
         if is_first_time is None:
-            self.console.config.set_value(Config.level_USER, Config.key_first, True)
-            push_msg = Msg(operate=Msg.key_notify, code=ErrorCode.Success)
-            push_msg.add(Msg.key_msg, 'start first time progress bar')
-            self.console.command.push(push_msg)
+            send_first_time_msg()
 
         if self.console.token:
             self.console.process.login_find_token_complete = True
@@ -278,50 +282,107 @@ class PTTAdapter:
                 self.console.config.set_value(Config.level_USER, Config.key_key_index, None)
 
         if not self.console.token or not self.console.private_key:
-            try:
-                mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
-            except PTT.exceptions.NoSearchResult:
-                self.logger.show(
-                    Logger.INFO,
-                    '無搜尋結果，準備請求 token')
 
-                push_msg = Msg(operate=Msg.key_get_token)
+            search = True
+            if self.console.process.login_result is None:
+
+                push_msg = Msg(operate=Msg.key_get_public_key)
                 push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+                push_msg.add(Msg.key_target, self.console.ptt_id)
+
+                self.console.process.wait_public_key_result = None
                 self.console.server_command.push(push_msg)
-                return
+                while self.console.process.wait_public_key_result is None:
+                    time.sleep(0.1)
 
-            self.logger.show(
-                Logger.INFO,
-                '最新信件編號',
-                mail_index)
-
-            for i in reversed(range(1, mail_index + 1)):
-
-                if self.console.token and self.console.private_key:
-                    break
+                if self.console.process.wait_public_key_result == ErrorCode.Success:
+                    # 表示有 key 在信箱
+                    search = True
+                else:
+                    search = False
+            elif self.console.process.login_result == 'search_token':
+                search = True
+                self.console.process.login_result = None
 
                 self.logger.show(
                     Logger.INFO,
-                    '檢查信件編號',
-                    i)
+                    '產生金鑰')
 
-                mail_info = self.bot.get_mail(i)
-                if mail_info.title is None:
-                    continue
-                if mail_info.author is None:
-                    continue
-                if mail_info.content is None:
-                    continue
+                self.console.crypto.generate_key()
+                public_key, private_key = self.console.crypto.export_key()
 
-                if self.console.config.system_mail_title != mail_info.title:
-                    continue
+                self.console.public_key = public_key
+                self.console.private_key = private_key
 
-                self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+                self.console.process.login_find_key_complete = True
 
-                self._parse_token(mail_info, i)
-                self._parse_key(mail_info, i)
+                content = list()
+                content.append(private_key)
+                content.append('')
+                content.append('請勿刪除此信 by uPtt')
+                content = '\r'.join(content)
+                content = content.replace('\n', '\r')
+
+                self.logger.show(
+                    Logger.INFO,
+                    '備份金鑰')
+
+                self.bot.mail(
+                    self.console.ptt_id,
+                    self.console.config.system_mail_title,
+                    content,
+                    0,
+                    backup=False)
+
+            if search:
+                try:
+                    mail_index = self.bot.get_newest_index(PTT.data_type.index_type.MAIL)
+                except PTT.exceptions.NoSearchResult:
+                    self.logger.show(
+                        Logger.INFO,
+                        '無搜尋結果，準備請求 token')
+
+                    push_msg = Msg(operate=Msg.key_get_token)
+                    push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
+                    self.console.server_command.push(push_msg)
+                    return
+
+                self.logger.show(
+                    Logger.INFO,
+                    '最新信件編號',
+                    mail_index)
+
+                for i in reversed(range(1, mail_index + 1)):
+
+                    if self.console.token and self.console.private_key:
+                        break
+
+                    self.logger.show(
+                        Logger.INFO,
+                        '檢查信件編號',
+                        i)
+
+                    mail_info = self.bot.get_mail(i)
+                    if mail_info.title is None:
+                        continue
+                    if mail_info.author is None:
+                        continue
+                    if mail_info.content is None:
+                        continue
+
+                    if self.console.config.system_mail_title != mail_info.title:
+                        continue
+
+                    self.logger.show(Logger.INFO, 'mail content', mail_info.content)
+
+                    self._parse_token(mail_info, i)
+                    self._parse_key(mail_info, i)
+
+                    if self.console.token and self.console.private_key:
+                        break
 
         if not self.console.token:
+            send_first_time_msg()
 
             self.logger.show(
                 Logger.INFO,
@@ -329,43 +390,6 @@ class PTTAdapter:
 
             push_msg = Msg(operate=Msg.key_get_token)
             push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
-            self.console.server_command.push(push_msg)
-
-        elif not self.console.private_key:
-            self.logger.show(
-                Logger.INFO,
-                '產生金鑰')
-
-            self.console.crypto.generate_key()
-            public_key, private_key = self.console.crypto.export_key()
-
-            content = list()
-            content.append(private_key)
-            content.append('請勿刪除此信 by uPtt')
-            content = '\r'.join(content)
-            content = content.replace('\n', '\r')
-
-            self.logger.show(
-                Logger.INFO,
-                '備份金鑰')
-
-            self.bot.mail(
-                self.console.ptt_id,
-                self.console.config.system_mail_title,
-                content,
-                0,
-                backup=False)
-
-            current_time = int(time.time())
-
-            hash_result = util.get_verify_hash(current_time, self.console.token, public_key)
-
-            push_msg = Msg(operate=Msg.key_update_public_key)
-            push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
-            push_msg.add(Msg.key_timestamp, current_time)
-            push_msg.add(Msg.key_hash, hash_result)
-            push_msg.add(Msg.key_public_key, public_key)
-
             self.console.server_command.push(push_msg)
 
     def run(self):
@@ -574,6 +598,10 @@ class PTTAdapter:
                 self.ptt_id = self.console.ptt_id
                 self.ptt_pw = self.console.ptt_pw
                 continue
+            except PTT.exceptions.ConnectionClosed:
+                self.ptt_id = self.console.ptt_id
+                self.ptt_pw = self.console.ptt_pw
+                continue
 
             self.logger.show(
                 Logger.DEBUG,
@@ -642,7 +670,11 @@ class PTTAdapter:
 
             try:
                 new_mail = self.bot.has_new_mail()
-            except:
+            except PTT.exceptions.Requirelogin:
+                self.ptt_id = self.console.ptt_id
+                self.ptt_pw = self.console.ptt_pw
+                continue
+            except PTT.exceptions.ConnectionClosed:
                 self.ptt_id = self.console.ptt_id
                 self.ptt_pw = self.console.ptt_pw
                 continue
