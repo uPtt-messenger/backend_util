@@ -33,7 +33,7 @@ class Msg:
     key_api_version = 'api_version'
     key_hash = 'hash'
     key_public_key = 'pub_key'
-    key_error_code = 'errorcode'
+    key_target = 'target'
 
     # server
 
