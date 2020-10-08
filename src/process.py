@@ -43,6 +43,11 @@ class Process:
             self.console.event.register(EventConsole.key_logout, self.logout)
             self.console.event.register(EventConsole.key_close, self.logout)
 
+        # check user public key itself
+
+        self.login_result = None
+        self.wait_public_key_result = None
+
         self.logger.show(
             Logger.INFO,
             '初始化',
@@ -133,11 +138,6 @@ class Process:
             msg='加密流程成功')
         self.console.command.push(push_msg)
 
-        push_msg = Msg(
-            operate=Msg.key_login,
-            code=ErrorCode.Success,
-            msg='Login success')
-
         if self.console.run_mode == Console.run_mode_dev:
             hash_id = util.sha256(self.console.ptt_id)
             if hash_id == 'c2c10daa1a61f1757019e995223ad346284e13462c62ee9dccac433445248899':
@@ -148,6 +148,11 @@ class Process:
             token = util.generate_token()
 
         self.console.login_token = token
+
+        push_msg = Msg(
+            operate=Msg.key_login,
+            code=ErrorCode.Success,
+            msg='Login success')
 
         payload = Msg()
         payload.add(Msg.key_token, token)
@@ -160,12 +165,17 @@ class Process:
 
         current_time = int(time.time())
 
-        hash_result = util.get_verify_hash(current_time, self.console.token, Msg.key_login_success)
+        hash_result = util.get_verify_hash(
+            current_time,
+            self.console.token,
+            Msg.key_login_success,
+            self.console.public_key)
 
         push_msg = Msg(operate=Msg.key_login_success)
         push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
         push_msg.add(Msg.key_timestamp, current_time)
         push_msg.add(Msg.key_hash, hash_result)
+        push_msg.add(Msg.key_public_key, self.console.public_key)
         self.console.server_command.push(push_msg)
 
         self.console.login_complete = True
@@ -212,11 +222,12 @@ class Process:
 
         self.logger.show(Logger.INFO, '修正線上人數核心', '初始化', '啟動')
         check_time = int(Config.heartbeat_time * 1.1)
-        self.logger.show(Logger.INFO, '修正線上人數核心', '修正間隔時間', check_time)
+        check_cycle = int(check_time/5)
+        self.logger.show(Logger.INFO, '修正線上人數核心', '修正週期', check_cycle)
         self.logger.show(Logger.INFO, '修正線上人數核心', '初始化', '完成')
 
         while True:
-            time.sleep(check_time)
+            time.sleep(check_cycle)
 
             current_time = int(time.time())
 
@@ -231,8 +242,8 @@ class Process:
 
             for ptt_id in remove_list:
                 self.logger.show(Logger.INFO, '剔除使用者', ptt_id, '啟動')
-                self.console.connect_list.set_value(ptt_id, None)
-                self.console.connect_time.set_value(ptt_id, None)
+                self.console.connect_list.set_value(ptt_id, None, show_result=False)
+                self.console.connect_time.set_value(ptt_id, None, show_result=False)
                 self.logger.show(Logger.INFO, '剔除使用者', ptt_id, '完成')
 
             self.console.command.max_online_lock.release()
