@@ -255,6 +255,37 @@ class PTTAdapter:
             push_msg.add(Msg.key_msg, 'start first time progress bar')
             self.console.command.push(push_msg)
 
+        def gen_key():
+            self.logger.show(
+                Logger.INFO,
+                '產生金鑰')
+
+            self.console.crypto.generate_key()
+            public_key, private_key = self.console.crypto.export_key()
+
+            self.console.public_key = public_key
+            self.console.private_key = private_key
+
+            self.console.process.login_find_key_complete = True
+
+            content = list()
+            content.append(private_key)
+            content.append('')
+            content.append('請勿刪除此信 by uPtt')
+            content = '\r'.join(content)
+            content = content.replace('\n', '\r')
+
+            self.logger.show(
+                Logger.INFO,
+                '備份金鑰')
+
+            self.bot.mail(
+                self.console.ptt_id,
+                self.console.config.system_mail_title,
+                content,
+                0,
+                backup=False)
+
         token_index = self.console.config.get_value(Config.level_USER, Config.key_token_index)
         key_index = self.console.config.get_value(Config.level_USER, Config.key_key_index)
 
@@ -304,35 +335,7 @@ class PTTAdapter:
                 search = True
                 self.console.process.login_result = None
 
-                self.logger.show(
-                    Logger.INFO,
-                    '產生金鑰')
-
-                self.console.crypto.generate_key()
-                public_key, private_key = self.console.crypto.export_key()
-
-                self.console.public_key = public_key
-                self.console.private_key = private_key
-
-                self.console.process.login_find_key_complete = True
-
-                content = list()
-                content.append(private_key)
-                content.append('')
-                content.append('請勿刪除此信 by uPtt')
-                content = '\r'.join(content)
-                content = content.replace('\n', '\r')
-
-                self.logger.show(
-                    Logger.INFO,
-                    '備份金鑰')
-
-                self.bot.mail(
-                    self.console.ptt_id,
-                    self.console.config.system_mail_title,
-                    content,
-                    0,
-                    backup=False)
+                gen_key()
 
             if search:
                 try:
@@ -362,7 +365,10 @@ class PTTAdapter:
                         '檢查信件編號',
                         i)
 
-                    mail_info = self.bot.get_mail(i)
+                    try:
+                        mail_info = self.bot.get_mail(i)
+                    except:
+                        break
                     if mail_info.title is None:
                         continue
                     if mail_info.author is None:
@@ -391,6 +397,9 @@ class PTTAdapter:
             push_msg = Msg(operate=Msg.key_get_token)
             push_msg.add(Msg.key_ptt_id, self.console.ptt_id)
             self.console.server_command.push(push_msg)
+
+        if not self.console.public_key or not self.console.private_key:
+            gen_key()
 
     def run(self):
 
@@ -442,11 +451,19 @@ class PTTAdapter:
                         # self.dialogue = Dialogue(self.console)
                         # self.console.dialogue = self.dialogue
 
-                        self.bot.set_call_status(PTT.data_type.call_status.OFF)
-                        self.bot.get_waterball(PTT.data_type.waterball_operate_type.CLEAR)
-
                         self.ptt_id = None
                         self.ptt_pw = None
+
+                        if self.bot.unregistered_user:
+
+                            self.console.event.execute(EventConsole.key_logout, run_thread=True)
+
+                            push_msg = Msg(operate=Msg.key_login, code=ErrorCode.UnregisteredUser)
+                            self.console.command.push(push_msg)
+                            return
+
+                        self.bot.set_call_status(PTT.data_type.call_status.OFF)
+                        self.bot.get_waterball(PTT.data_type.waterball_operate_type.CLEAR)
 
                         self.console.process.login_ptt_login_complete = True
 
