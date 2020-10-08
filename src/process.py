@@ -33,13 +33,15 @@ class Process:
         self.login_find_key_complete = False
 
         # logout process
-        self.console.event.register(EventConsole.key_logout, self.logout)
-        self.console.event.register(EventConsole.key_close, self.logout)
 
         if self.console.role == Console.role_server:
+
             t = threading.Thread(target=self.check_online)
             t.daemon = True
             t.start()
+        else:
+            self.console.event.register(EventConsole.key_logout, self.logout)
+            self.console.event.register(EventConsole.key_close, self.logout)
 
         self.logger.show(
             Logger.INFO,
