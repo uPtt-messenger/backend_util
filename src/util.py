@@ -61,12 +61,9 @@ def get_substring(main_string, start, end):
     return main_string.strip()
 
 
-def get_verify_hash(a, b, c=None):
-    if c:
-        value = f'{a}{b}{c}'
-    else:
-        value = f'{a}{b}'
-    return sha256(value)
+def get_verify_hash(*value):
+    value = [str(x) for x in value]
+    return sha256(''.join(value))
 
 
 if __name__ == '__main__':
