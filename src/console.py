@@ -35,6 +35,7 @@ class Console:
         self.process = None
         self.login_complete = False
         self.last_send_time = 0
+        self.user_public_key = None
 
         ##################################
         # server
