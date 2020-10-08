@@ -49,7 +49,7 @@ class Config:
     server_frequency = 60
 
     system_mail_key = 'uPtt system'
-    system_mail_title = f'-----{system_mail_key}-----'
+    system_mail_title = f'{system_mail_key} 重要，請勿刪除'
 
     token_title = 'uPtt token'
     token_start = f'-----BEGIN uPtt token-----'
