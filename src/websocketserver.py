@@ -80,14 +80,10 @@ class WsServer:
                 except Exception as e:
                     raise ValueError('Connection Close: recv fail')
 
-                self.logger.show(
-                    Logger.INFO,
-                    '收到字串',
-                    recv_msg_str)
                 # self.logger.show(
                 #     Logger.INFO,
-                #     '路徑',
-                #     path)
+                #     '收到字串',
+                #     recv_msg_str)
 
                 try:
                     recv_msg = Msg(strobj=recv_msg_str)

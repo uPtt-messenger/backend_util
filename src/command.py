@@ -157,12 +157,15 @@ class Command:
                     msg=f'{opt} not in server api list')
                 self.console.command.push(res_msg)
                 return
+        else:
+            self.logger.show(Logger.INFO, '收到訊息', opt)
 
         if opt == Msg.key_get_public_key:
             if self.console.role == Console.role_server:
                 ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
                     return
+                self.logger.show(Logger.INFO, '收到請求', ptt_id, opt)
 
                 target = self.get_msg_value(recv_msg, Msg.key_target)
                 if target is None:
@@ -208,14 +211,12 @@ class Command:
         elif opt == Msg.key_get_token:
 
             if self.console.role == Console.role_server:
-
                 current_ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if current_ptt_id is None:
                     return
-                self.logger.show(Logger.INFO, 'ptt_id', current_ptt_id)
+                self.logger.show(Logger.INFO, '收到請求', current_ptt_id, opt)
 
                 current_token = util.generate_token()
-                self.logger.show(Logger.INFO, 'token', current_token)
 
                 ptt_id = self.console.config.get_value(Config.level_SYSTEM, Config.key_ptt_id)
                 ptt_pw = self.console.config.get_value(Config.level_SYSTEM, Config.key_ptt_pw)
@@ -251,6 +252,8 @@ class Command:
                 ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
                     return
+                self.logger.show(Logger.INFO, '收到請求', ptt_id, opt)
+
                 public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
                 if public_key is None:
                     return
@@ -289,6 +292,7 @@ class Command:
                     return
 
                 if opt == Msg.key_login_success:
+                    self.logger.show(Logger.INFO, '收到請求', ptt_id, opt)
 
                     public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
                     if public_key is None:
@@ -304,8 +308,8 @@ class Command:
 
                 self.max_online_lock.acquire()
 
-                self.console.connect_list.set_value(ptt_id.lower(), ws)
-                self.console.connect_time.set_value(ptt_id.lower(), timestamp)
+                self.console.connect_list.set_value(ptt_id.lower(), ws, show_result=False)
+                self.console.connect_time.set_value(ptt_id.lower(), timestamp, show_result=False)
 
                 current_online = len(self.console.connect_list)
                 current_time = self.console.max_online.get_value(current_online)
@@ -365,6 +369,7 @@ class Command:
                 ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
                     return
+                self.logger.show(Logger.INFO, '收到請求', ptt_id, opt)
 
                 self.max_online_lock.acquire()
 
