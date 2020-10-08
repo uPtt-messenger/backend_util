@@ -11,3 +11,4 @@ class ErrorCode:
     ErrorParameter = 9
     UnknownError = 10
     TryLater = 11
+    UnregisteredUser = 12
