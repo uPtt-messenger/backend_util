@@ -99,7 +99,7 @@ class DictData:
                     else:
                         self.logger.show(Logger.INFO, '已經更新資料', key)
             else:
-                self.logger.show(Logger.INFO, '資料沒有更動', key, '沒有更動')
+                self.logger.show(Logger.INFO, '資料沒有更動', key)
 
         return value_change
 

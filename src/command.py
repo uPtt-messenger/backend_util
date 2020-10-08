@@ -301,7 +301,7 @@ class Command:
                     if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success + public_key):
                         return
 
-                    self.console.public_key_list.set_value(ptt_id.lower(), public_key)
+                    self.console.public_key_list.set_value(ptt_id.lower(), public_key, show_result=False)
                 else:
                     if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_heartbeat):
                         return
@@ -373,8 +373,8 @@ class Command:
 
                 self.max_online_lock.acquire()
 
-                self.console.connect_list.set_value(ptt_id.lower(), None)
-                self.console.connect_time.set_value(ptt_id.lower(), None)
+                self.console.connect_list.set_value(ptt_id.lower(), None, show_result=False)
+                self.console.connect_time.set_value(ptt_id.lower(), None, show_result=False)
 
                 self.max_online_lock.release()
 
