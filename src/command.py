@@ -43,10 +43,11 @@ class Command:
 
         self.server_api = [
             Msg.key_get_token,
-            Msg.key_update_public_key,
+            # Msg.key_update_public_key,
             Msg.key_login_success,
             Msg.key_logout_success,
-            Msg.key_heartbeat
+            Msg.key_heartbeat,
+            Msg.key_get_public_key
         ]
 
         self.logger.show(
@@ -115,7 +116,6 @@ class Command:
             return False
 
         current_hash = util.get_verify_hash(timestamp, current_token, key_value)
-
         if current_hash != hash_value:
             self.logger.show(
                 Logger.INFO,
@@ -163,39 +163,47 @@ class Command:
                 ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
                     return
-                self.logger.show(Logger.INFO, 'ptt_id', ptt_id)
 
-                if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_get_public_key):
+                target = self.get_msg_value(recv_msg, Msg.key_target)
+                if target is None:
                     return
 
-                public_key = self.console.public_key_list.get_value(ptt_id.lower())
+                public_key = self.console.public_key_list.get_value(target.lower())
                 if not public_key:
                     res_msg = Msg(
                         operate=opt,
                         code=ErrorCode.NoSuchUser,
-                        msg=f'{ptt_id} is not using uPtt')
+                        msg=f'{target} is not using uPtt')
+                    res_msg.add(Msg.key_target, target)
                 else:
                     res_msg = Msg(
                         operate=opt,
                         code=ErrorCode.Success)
+                    res_msg.add(Msg.key_target, target)
                     res_msg.add(Msg.key_public_key, public_key)
                 self.console.command.push(res_msg)
 
             else:
-                error_code = self.get_msg_value(recv_msg, Msg.key_error_code)
+                target = self.get_msg_value(recv_msg, Msg.key_target)
+                if target is None:
+                    return
+                error_code = self.get_msg_value(recv_msg, Msg.key_code)
                 if error_code is None:
                     return
-                if error_code != ErrorCode.Success:
-                    self.console.command.push(recv_msg)
-                    return
-                ptt_id = self.get_msg_value(recv_msg, Msg.key_ptt_id)
-                if ptt_id is None:
-                    return
-                public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
-                if not public_key:
-                    return
-                self.logger.show(Logger.INFO, 'target id', ptt_id)
-                self.logger.show(Logger.INFO, 'public_key', public_key)
+                if target.lower() == self.console.ptt_id.lower():
+                    self.console.process.wait_public_key_result = error_code
+                else:
+                    if error_code != ErrorCode.Success:
+                        self.console.command.push(recv_msg)
+                        return
+
+                    public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
+                    if not public_key:
+                        return
+                    self.logger.show(Logger.INFO, 'target id', target)
+                    self.logger.show(Logger.INFO, 'public_key', public_key)
+
+                    self.console.user_public_key.set_value(target.lower(), public_key)
 
         elif opt == Msg.key_get_token:
 
@@ -231,6 +239,7 @@ class Command:
                     return
                 if error_code == ErrorCode.Success:
                     self.logger.show(Logger.INFO, '伺服器已經送出 token')
+                    self.console.process.login_result = 'search_token'
                     self.console.event.execute(EventConsole.key_get_token)
                 else:
                     # 送訊息到前端
@@ -274,15 +283,21 @@ class Command:
                 ptt_id = self.console.command.get_msg_value(recv_msg, Msg.key_ptt_id)
                 if ptt_id is None:
                     return
-                self.logger.show(Logger.INFO, 'ptt_id', ptt_id)
 
                 timestamp = self.get_msg_value(recv_msg, Msg.key_timestamp)
                 if timestamp is None:
                     return
 
                 if opt == Msg.key_login_success:
-                    if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success):
+
+                    public_key = self.get_msg_value(recv_msg, Msg.key_public_key)
+                    if public_key is None:
                         return
+
+                    if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_login_success + public_key):
+                        return
+
+                    self.console.public_key_list.set_value(ptt_id.lower(), public_key)
                 else:
                     if not self._verify_hash(recv_msg, opt, ptt_id, Msg.key_heartbeat):
                         return
