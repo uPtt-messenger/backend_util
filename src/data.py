@@ -71,7 +71,7 @@ class DictData:
             return None
         return self.data[key]
 
-    def _set_value_func(self, key, value):
+    def _set_value_func(self, key, value, show_result):
 
         key = str(key)
 
@@ -89,23 +89,24 @@ class DictData:
                 value_change = True
             del self.data[key]
 
-        if value_change:
-            if key not in self.data:
-                self.logger.show(Logger.INFO, '已經清空資料', key)
-            else:
-                if isinstance(self.data[key], str) or isinstance(self.data[key], int):
-                    self.logger.show(Logger.INFO, '已經更新資料', key, self.data[key])
+        if show_result:
+            if value_change:
+                if key not in self.data:
+                    self.logger.show(Logger.INFO, '已經清空資料', key)
                 else:
-                    self.logger.show(Logger.INFO, '已經更新資料', key)
-        else:
-            self.logger.show(Logger.INFO, '資料沒有更動', key, '沒有更動')
+                    if isinstance(self.data[key], str) or isinstance(self.data[key], int):
+                        self.logger.show(Logger.INFO, '已經更新資料', key, self.data[key])
+                    else:
+                        self.logger.show(Logger.INFO, '已經更新資料', key)
+            else:
+                self.logger.show(Logger.INFO, '資料沒有更動', key, '沒有更動')
 
         return value_change
 
-    def set_value(self, key, value):
+    def set_value(self, key, value, show_result=True):
 
         key = str(key)
-        value_change = self._set_value_func(key, value)
+        value_change = self._set_value_func(key, value, show_result)
         if value_change and self.save_path:
             self.save()
         return value_change
